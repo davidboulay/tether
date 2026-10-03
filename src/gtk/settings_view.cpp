@@ -27,6 +27,8 @@ namespace tether::ui {
             GtkWidget* sw_content = nullptr;
 
             GtkWidget* sw_popups = nullptr;
+            GtkWidget* row_previews = nullptr;
+            GtkWidget* sw_previews = nullptr;
 
             GtkWidget* row_retention = nullptr;
             GtkWidget* cmb_retention = nullptr;
@@ -128,6 +130,10 @@ namespace tether::ui {
             daemon_send({{"command", "set_desktop_popups"}, {"enabled", gtk_switch_get_active(widget) == TRUE}});
         }
 
+        void on_previews_toggled(GtkSwitch* widget, GParamSpec*, gpointer) {
+            daemon_send({{"command", "set_popup_previews"}, {"enabled", gtk_switch_get_active(widget) == TRUE}});
+        }
+
         void on_calls_toggled(GtkSwitch* widget, GParamSpec*, gpointer) {
             daemon_send({{"command", "bt_set_calls"}, {"enabled", gtk_switch_get_active(widget) == TRUE}});
         }
@@ -179,9 +185,12 @@ namespace tether::ui {
                        status.value("calls_enabled", false));
 
             // Popups cover Wi-Fi file transfers too, so this one never depends on a bond.
-            set_switch(g_settings.sw_popups,
-                       reinterpret_cast<gpointer>(on_popups_toggled),
-                       status.value("desktop_popups_enabled", true));
+            const bool popups_on = status.value("desktop_popups_enabled", true);
+            set_switch(g_settings.sw_popups, reinterpret_cast<gpointer>(on_popups_toggled), popups_on);
+            gtk_widget_set_sensitive(g_settings.row_previews, popups_on);
+            set_switch(g_settings.sw_previews,
+                       reinterpret_cast<gpointer>(on_previews_toggled),
+                       status.value("popup_previews_enabled", true));
 
             set_switch(g_settings.sw_lock_away,
                        reinterpret_cast<gpointer>(on_lock_away_toggled),
@@ -285,6 +294,11 @@ namespace tether::ui {
                     _("Show desktop popups"),
                     _("Off silences iPhone alerts, new messages and arriving files."),
                     g_settings.sw_popups);
+
+            g_settings.sw_previews = new_switch();
+            g_signal_connect(g_settings.sw_previews, "notify::active", G_CALLBACK(on_previews_toggled), nullptr);
+            g_settings.row_previews =
+                add_row(popups, _("Show message previews"), _("Off shows only the sender."), g_settings.sw_previews);
 
             // Security
             GtkWidget* security = add_group(column, _("Security"), _("What Tether does when the iPhone leaves."));

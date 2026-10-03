@@ -94,6 +94,10 @@ namespace tether {
     void set_desktop_popups_enabled(bool enabled);
     bool desktop_popups_enabled();
 
+    // Whether phone popups include the message text. Off keeps only the sender.
+    void set_popup_previews_enabled(bool enabled);
+    bool popup_previews_enabled();
+
     void set_mdns_available(bool available);
     bool mdns_available();
     nlohmann::json build_mdns_status();

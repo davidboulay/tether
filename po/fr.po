@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-14 21:59-0700\n"
+"POT-Creation-Date: 2026-10-02 19:39-0700\n"
 "PO-Revision-Date: 2026-08-22\n"
 "Last-Translator: Tether project\n"
 "Language-Team: French\n"
@@ -1729,6 +1729,10 @@ msgstr "Échec de l'envoi : {}"
 msgid "unknown error"
 msgstr "erreur inconnue"
 
+#: src/core/src/net.cpp src/gtk/devices_view.cpp src/gtk/messages_view.cpp
+msgid "Could not reach the Tether daemon."
+msgstr "Impossible de joindre le démon Tether."
+
 #. TRANSLATORS: {0} is the device name, {1} is a shortened key fingerprint.
 #: src/core/src/net.cpp
 #, c++-format
@@ -1969,10 +1973,6 @@ msgstr "Adaptatif"
 #: src/gtk/devices_view.cpp
 msgid "Noise Cancellation"
 msgstr "Réduction de bruit"
-
-#: src/gtk/devices_view.cpp src/gtk/messages_view.cpp
-msgid "Could not reach the Tether daemon."
-msgstr "Impossible de joindre le démon Tether."
 
 #: src/gtk/devices_view.cpp
 msgid "Disconnect"
@@ -2709,6 +2709,14 @@ msgstr ""
 "fichiers reçus."
 
 #: src/gtk/settings_view.cpp
+msgid "Show message previews"
+msgstr "Afficher l'aperçu des messages"
+
+#: src/gtk/settings_view.cpp
+msgid "Off shows only the sender."
+msgstr "Désactivé, seul l'expéditeur est affiché."
+
+#: src/gtk/settings_view.cpp
 msgid "Security"
 msgstr "Sécurité"
 
@@ -2815,7 +2823,8 @@ msgstr "Appairez des appareils et synchronisez le presse-papiers sur le réseau"
 
 #: src/gtk/tether-gtk.desktop.in
 msgid "iPhone;iOS;SMS;Messages;Clipboard;Files;Notifications;Calls;AirPods;"
-msgstr "iPhone;iOS;SMS;Messages;Presse-papiers;Fichiers;Notifications;Appels;AirPods;"
+msgstr ""
+"iPhone;iOS;SMS;Messages;Presse-papiers;Fichiers;Notifications;Appels;AirPods;"
 
 #~ msgid ""
 #~ "Where messages and contacts are stored on this computer. Encrypted keeps "

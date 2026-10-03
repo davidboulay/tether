@@ -256,7 +256,7 @@ int main(int argc, char** argv) {
                 tether::bluetooth::recipient_from_thread_key(message.thread_key, recipient, reply_error);
             notifier.notify({_("Messages"),
                              who.empty() ? "iPhone" : who,
-                             message.body,
+                             tether::popup_previews_enabled() ? message.body : std::string{},
                              tether::bluetooth::ancs::icon_candidates(as_notification),
                              false,
                              repliable ? message.thread_key : std::string{},
@@ -269,6 +269,7 @@ int main(int argc, char** argv) {
 
     tether::secret::set_retention(bt_config.retention);
     tether::set_desktop_popups_enabled(bt_config.desktop_popups_enabled);
+    tether::set_popup_previews_enabled(bt_config.popup_previews_enabled);
 
     // Pick the controller before the first capability, a second adapter never comes up bound to the wrong one.
     bluez.set_preferred_adapter(bt_config.adapter);
@@ -667,7 +668,7 @@ int main(int argc, char** argv) {
                     const std::string body = notification.body.empty() ? notification.subtitle : notification.body;
                     notifier.notify({notification.app_name,
                                      title.empty() ? "iPhone" : title,
-                                     body,
+                                     tether::popup_previews_enabled() ? body : std::string{},
                                      tether::bluetooth::ancs::icon_candidates(notification),
                                      notification.silent,
                                      "",

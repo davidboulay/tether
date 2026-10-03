@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-14 21:59-0700\n"
+"POT-Creation-Date: 2026-10-02 19:39-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Japanese\n"
@@ -1691,6 +1691,10 @@ msgstr "送信に失敗しました: {}"
 msgid "unknown error"
 msgstr "不明なエラー"
 
+#: src/core/src/net.cpp src/gtk/devices_view.cpp src/gtk/messages_view.cpp
+msgid "Could not reach the Tether daemon."
+msgstr "Tether デーモンに接続できませんでした。"
+
 #. TRANSLATORS: {0} is the device name, {1} is a shortened key fingerprint.
 #: src/core/src/net.cpp
 #, c++-format
@@ -1929,10 +1933,6 @@ msgstr "アダプティブ"
 #: src/gtk/devices_view.cpp
 msgid "Noise Cancellation"
 msgstr "ノイズキャンセリング"
-
-#: src/gtk/devices_view.cpp src/gtk/messages_view.cpp
-msgid "Could not reach the Tether daemon."
-msgstr "Tether デーモンに接続できませんでした。"
 
 #: src/gtk/devices_view.cpp
 msgid "Disconnect"
@@ -2658,6 +2658,14 @@ msgid "Off silences iPhone alerts, new messages and arriving files."
 msgstr ""
 "オフにすると iPhone の通知、新着メッセージ、受信ファイルがすべて表示されませ"
 "ん。"
+
+#: src/gtk/settings_view.cpp
+msgid "Show message previews"
+msgstr "メッセージのプレビューを表示"
+
+#: src/gtk/settings_view.cpp
+msgid "Off shows only the sender."
+msgstr "オフにすると送信者のみ表示します。"
 
 #: src/gtk/settings_view.cpp
 msgid "Security"

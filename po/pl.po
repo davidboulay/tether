@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-14 21:59-0700\n"
+"POT-Creation-Date: 2026-10-02 19:39-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Polish\n"
@@ -1714,6 +1714,10 @@ msgstr "Wysyłanie nie powiodło się: {}"
 msgid "unknown error"
 msgstr "nieznany błąd"
 
+#: src/core/src/net.cpp src/gtk/devices_view.cpp src/gtk/messages_view.cpp
+msgid "Could not reach the Tether daemon."
+msgstr "Nie udało się połączyć z demonem Tether."
+
 #. TRANSLATORS: {0} is the device name, {1} is a shortened key fingerprint.
 #: src/core/src/net.cpp
 #, c++-format
@@ -1952,10 +1956,6 @@ msgstr "Adaptacyjny"
 #: src/gtk/devices_view.cpp
 msgid "Noise Cancellation"
 msgstr "Redukcja szumów"
-
-#: src/gtk/devices_view.cpp src/gtk/messages_view.cpp
-msgid "Could not reach the Tether daemon."
-msgstr "Nie udało się połączyć z demonem Tether."
 
 #: src/gtk/devices_view.cpp
 msgid "Disconnect"
@@ -2685,6 +2685,14 @@ msgstr "Pokazuj wyskakujące powiadomienia"
 msgid "Off silences iPhone alerts, new messages and arriving files."
 msgstr ""
 "Wyłączenie wycisza alerty z iPhone'a, nowe wiadomości i przychodzące pliki."
+
+#: src/gtk/settings_view.cpp
+msgid "Show message previews"
+msgstr "Pokazuj podgląd wiadomości"
+
+#: src/gtk/settings_view.cpp
+msgid "Off shows only the sender."
+msgstr "Wyłączone pokazuje tylko nadawcę."
 
 #: src/gtk/settings_view.cpp
 msgid "Security"

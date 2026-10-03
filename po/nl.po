@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-14 21:59-0700\n"
+"POT-Creation-Date: 2026-10-02 19:39-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Dutch\n"
@@ -1714,6 +1714,10 @@ msgstr "Versturen mislukt: {}"
 msgid "unknown error"
 msgstr "onbekende fout"
 
+#: src/core/src/net.cpp src/gtk/devices_view.cpp src/gtk/messages_view.cpp
+msgid "Could not reach the Tether daemon."
+msgstr "Kon de Tether-daemon niet bereiken."
+
 #. TRANSLATORS: {0} is the device name, {1} is a shortened key fingerprint.
 #: src/core/src/net.cpp
 #, c++-format
@@ -1953,10 +1957,6 @@ msgstr "Adaptief"
 #: src/gtk/devices_view.cpp
 msgid "Noise Cancellation"
 msgstr "Ruisonderdrukking"
-
-#: src/gtk/devices_view.cpp src/gtk/messages_view.cpp
-msgid "Could not reach the Tether daemon."
-msgstr "Kon de Tether-daemon niet bereiken."
 
 #: src/gtk/devices_view.cpp
 msgid "Disconnect"
@@ -2684,6 +2684,14 @@ msgstr "Bureaubladmeldingen tonen"
 msgid "Off silences iPhone alerts, new messages and arriving files."
 msgstr ""
 "Uit dempt iPhone-meldingen, nieuwe berichten en binnenkomende bestanden."
+
+#: src/gtk/settings_view.cpp
+msgid "Show message previews"
+msgstr "Berichtvoorbeeld tonen"
+
+#: src/gtk/settings_view.cpp
+msgid "Off shows only the sender."
+msgstr "Uit toont alleen de afzender."
 
 #: src/gtk/settings_view.cpp
 msgid "Security"
