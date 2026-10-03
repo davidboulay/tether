@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-14 21:59-0700\n"
+"POT-Creation-Date: 2026-10-02 19:39-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Swedish\n"
@@ -1698,6 +1698,10 @@ msgstr "Sändningen misslyckades: {}"
 msgid "unknown error"
 msgstr "okänt fel"
 
+#: src/core/src/net.cpp src/gtk/devices_view.cpp src/gtk/messages_view.cpp
+msgid "Could not reach the Tether daemon."
+msgstr "Kunde inte nå Tether-demonen."
+
 #. TRANSLATORS: {0} is the device name, {1} is a shortened key fingerprint.
 #: src/core/src/net.cpp
 #, c++-format
@@ -1934,10 +1938,6 @@ msgstr "Adaptivt"
 #: src/gtk/devices_view.cpp
 msgid "Noise Cancellation"
 msgstr "Brusreducering"
-
-#: src/gtk/devices_view.cpp src/gtk/messages_view.cpp
-msgid "Could not reach the Tether daemon."
-msgstr "Kunde inte nå Tether-demonen."
 
 #: src/gtk/devices_view.cpp
 msgid "Disconnect"
@@ -2664,6 +2664,14 @@ msgstr "Visa skrivbordsnotiser"
 #: src/gtk/settings_view.cpp
 msgid "Off silences iPhone alerts, new messages and arriving files."
 msgstr "Av tystar iPhone-aviseringar, nya meddelanden och inkommande filer."
+
+#: src/gtk/settings_view.cpp
+msgid "Show message previews"
+msgstr "Visa förhandsvisning av meddelanden"
+
+#: src/gtk/settings_view.cpp
+msgid "Off shows only the sender."
+msgstr "Av visar bara avsändaren."
 
 #: src/gtk/settings_view.cpp
 msgid "Security"

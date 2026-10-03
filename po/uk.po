@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-14 21:59-0700\n"
+"POT-Creation-Date: 2026-10-02 19:39-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Ukrainian\n"
@@ -1710,6 +1710,10 @@ msgstr "Не вдалося надіслати: {}"
 msgid "unknown error"
 msgstr "невідома помилка"
 
+#: src/core/src/net.cpp src/gtk/devices_view.cpp src/gtk/messages_view.cpp
+msgid "Could not reach the Tether daemon."
+msgstr "Не вдалося зв'язатися з демоном Tether."
+
 #. TRANSLATORS: {0} is the device name, {1} is a shortened key fingerprint.
 #: src/core/src/net.cpp
 #, c++-format
@@ -1948,10 +1952,6 @@ msgstr "Адаптивний"
 #: src/gtk/devices_view.cpp
 msgid "Noise Cancellation"
 msgstr "Шумозаглушення"
-
-#: src/gtk/devices_view.cpp src/gtk/messages_view.cpp
-msgid "Could not reach the Tether daemon."
-msgstr "Не вдалося зв'язатися з демоном Tether."
 
 #: src/gtk/devices_view.cpp
 msgid "Disconnect"
@@ -2685,6 +2685,14 @@ msgstr ""
 "файли."
 
 #: src/gtk/settings_view.cpp
+msgid "Show message previews"
+msgstr "Показувати текст повідомлень"
+
+#: src/gtk/settings_view.cpp
+msgid "Off shows only the sender."
+msgstr "Якщо вимкнено, показується лише відправник."
+
+#: src/gtk/settings_view.cpp
 msgid "Security"
 msgstr "Безпека"
 
@@ -2788,7 +2796,8 @@ msgstr "Створюйте пари пристроїв і синхронізуй
 
 #: src/gtk/tether-gtk.desktop.in
 msgid "iPhone;iOS;SMS;Messages;Clipboard;Files;Notifications;Calls;AirPods;"
-msgstr "iPhone;iOS;SMS;Повідомлення;Буфер обміну;Файли;Сповіщення;Дзвінки;AirPods;"
+msgstr ""
+"iPhone;iOS;SMS;Повідомлення;Буфер обміну;Файли;Сповіщення;Дзвінки;AirPods;"
 
 #~ msgid ""
 #~ "Where messages and contacts are stored on this computer. Encrypted keeps "

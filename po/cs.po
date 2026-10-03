@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-14 21:59-0700\n"
+"POT-Creation-Date: 2026-10-02 19:39-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Czech\n"
@@ -1697,6 +1697,10 @@ msgstr "Odeslání selhalo: {}"
 msgid "unknown error"
 msgstr "neznámá chyba"
 
+#: src/core/src/net.cpp src/gtk/devices_view.cpp src/gtk/messages_view.cpp
+msgid "Could not reach the Tether daemon."
+msgstr "Nepodařilo se spojit s démonem Tether."
+
 #. TRANSLATORS: {0} is the device name, {1} is a shortened key fingerprint.
 #: src/core/src/net.cpp
 #, c++-format
@@ -1935,10 +1939,6 @@ msgstr "Adaptivní"
 #: src/gtk/devices_view.cpp
 msgid "Noise Cancellation"
 msgstr "Potlačení hluku"
-
-#: src/gtk/devices_view.cpp src/gtk/messages_view.cpp
-msgid "Could not reach the Tether daemon."
-msgstr "Nepodařilo se spojit s démonem Tether."
 
 #: src/gtk/devices_view.cpp
 msgid "Disconnect"
@@ -2663,6 +2663,14 @@ msgstr "Zobrazovat vyskakovací oznámení"
 #: src/gtk/settings_view.cpp
 msgid "Off silences iPhone alerts, new messages and arriving files."
 msgstr "Vypnuto ztlumí oznámení z iPhonu, nové zprávy i příchozí soubory."
+
+#: src/gtk/settings_view.cpp
+msgid "Show message previews"
+msgstr "Zobrazovat náhledy zpráv"
+
+#: src/gtk/settings_view.cpp
+msgid "Off shows only the sender."
+msgstr "Vypnuto zobrazí jen odesílatele."
 
 #: src/gtk/settings_view.cpp
 msgid "Security"

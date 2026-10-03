@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-14 21:59-0700\n"
+"POT-Creation-Date: 2026-10-02 19:39-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Simplified Chinese\n"
@@ -1628,6 +1628,10 @@ msgstr "发送失败：{}"
 msgid "unknown error"
 msgstr "未知错误"
 
+#: src/core/src/net.cpp src/gtk/devices_view.cpp src/gtk/messages_view.cpp
+msgid "Could not reach the Tether daemon."
+msgstr "无法连接到 Tether 守护进程。"
+
 #. TRANSLATORS: {0} is the device name, {1} is a shortened key fingerprint.
 #: src/core/src/net.cpp
 #, c++-format
@@ -1863,10 +1867,6 @@ msgstr "自适应"
 #: src/gtk/devices_view.cpp
 msgid "Noise Cancellation"
 msgstr "降噪"
-
-#: src/gtk/devices_view.cpp src/gtk/messages_view.cpp
-msgid "Could not reach the Tether daemon."
-msgstr "无法连接到 Tether 守护进程。"
 
 #: src/gtk/devices_view.cpp
 msgid "Disconnect"
@@ -2573,6 +2573,14 @@ msgstr "显示桌面弹窗"
 #: src/gtk/settings_view.cpp
 msgid "Off silences iPhone alerts, new messages and arriving files."
 msgstr "关闭后将不显示 iPhone 提醒、新消息和收到的文件。"
+
+#: src/gtk/settings_view.cpp
+msgid "Show message previews"
+msgstr "显示消息预览"
+
+#: src/gtk/settings_view.cpp
+msgid "Off shows only the sender."
+msgstr "关闭后仅显示发件人。"
 
 #: src/gtk/settings_view.cpp
 msgid "Security"
