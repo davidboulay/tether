@@ -30,6 +30,7 @@ add_executable(tether_test
     test_otp.cpp
     test_paths.cpp
     test_message_format.cpp
+    test_pending_send.cpp
     test_service.cpp
     test_verbs.cpp
     ../src/gtk/message_format.cpp

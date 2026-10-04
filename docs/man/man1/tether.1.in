@@ -47,6 +47,16 @@ Connect over TCP port (default: 5134).
 \fB\-\-timeout\fR \fIMS\fR
 Discovery scan duration in milliseconds (default: 3000).
 .TP
+\fB\-\-json\fR
+On the commands that read state (\fBstatus\fR, \fBpending\fR, \fBpaste\fR,
+\fBdiscover\fR, \fBclipboard status\fR, \fBmute list\fR, and the Bluetooth
+readers such as \fBbt status\fR, \fBbt connection\fR, \fBbt threads\fR), print
+the daemon's reply as JSON instead of text. May come before or after the command.
+.TP
+\fB\-\-print-completions\fR \fIbash\fR|\fIzsh\fR|\fIfish\fR
+Print a completion script for that shell, generated from the same tables this
+help comes from. The packages install one for each shell already.
+.TP
 \fB\-\-list-devices\fR
 List all paired connection devices and their fingerprints.
 .TP
@@ -62,6 +72,24 @@ is how a request is seen.
 .TP
 \fB\-\-accept\fR \fIFINGERPRINT\fR
 Accept a pending pairing request locally for the specified device fingerprint.
+.TP
+\fB\-\-reject\fR \fIFINGERPRINT\fR
+Turn down a pending pairing request. The other device is told, and the request
+leaves \fB\-\-pending\fR.
+.TP
+\fB\-\-clipboard-sync\fR \fIon\fR|\fIoff\fR|\fIstatus\fR
+Whether what is copied on this computer is sent to the iPhone. \fIoff\fR pauses
+it without touching anything else; the iPhone can still send its clipboard here.
+Copies a password manager marks as sensitive are never sent, on or off.
+.TP
+\fB\-\-mute\fR \fIBUNDLE-ID\fR|\fIlist\fR
+Stop showing desktop popups for one iPhone app, named by its bundle id, such as
+\fIcom.apple.MobileSMS\fR. The app still appears in the Notifications tab.
+\fIlist\fR prints the muted apps. \fB\-\-bt-notifications\fR shows each
+notification's app id.
+.TP
+\fB\-\-unmute\fR \fIBUNDLE-ID\fR
+Show desktop popups from a muted iPhone app again.
 .TP
 \fB\-\-pair\fR
 Send a pairing request over TCP to the daemon.
@@ -98,11 +126,14 @@ starts with a dash, is left for the option parser.
 \fBstatus\fR, \fBdevices\fR, \fBpending\fR
 \fB\-\-status\fR, \fB\-\-list-devices\fR, \fB\-\-pending\fR
 .TP
-\fBaccept\fR \fIFINGERPRINT\fR, \fBforget\fR \fIFINGERPRINT\fR, \fBpair\fR
-\fB\-\-accept\fR, \fB\-\-forget\fR, \fB\-\-pair\fR
+\fBaccept\fR \fIFINGERPRINT\fR, \fBreject\fR \fIFINGERPRINT\fR, \fBforget\fR \fIFINGERPRINT\fR, \fBpair\fR
+\fB\-\-accept\fR, \fB\-\-reject\fR, \fB\-\-forget\fR, \fB\-\-pair\fR
 .TP
 \fBdiscover\fR, \fBsend\fR \fIFILE\fR, \fBcopy\fR [\fISTRING\fR], \fBpaste\fR
 \fB\-\-discover\fR, \fB\-\-send-file\fR, \fB\-\-set-clipboard\fR, \fB\-\-get-clipboard\fR
+.TP
+\fBclipboard\fR \fIon\fR|\fIoff\fR|\fIstatus\fR, \fBmute\fR \fIBUNDLE-ID\fR|\fIlist\fR, \fBunmute\fR \fIBUNDLE-ID\fR
+\fB\-\-clipboard-sync\fR, \fB\-\-mute\fR, \fB\-\-unmute\fR
 .TP
 \fBservice\fR, \fBversion\fR, \fBhelp\fR
 \fB\-\-install-service\fR, \fB\-\-version\fR, \fB\-\-help\fR
@@ -226,6 +257,15 @@ more than one. \fB\-\-bt-status\fR marks the controller in use.
 .TP
 \fB\-\-bt-diagnostics\fR
 Print a redacted Bluetooth report for a bug report.
+.SH EXIT STATUS
+0 when the command did what it says. 1 when the daemon could not be reached or
+refused, or did not confirm a change (an older \fBtetherd\fR answers a setting
+it does not know with nothing, which is reported, not taken for success). 2 for
+an unknown option or command, or a missing argument.
+.PP
+\fBpaste\fR writes the clipboard bytes exactly as they are, so
+\fBtether paste | wc \-c\fR counts them; a trailing newline is added only on a
+terminal. Progress and errors go to standard error.
 .SH EXAMPLES
 Retrieve clipboard:
 .IP
@@ -252,6 +292,16 @@ The same things, as subcommands:
 tether send document.pdf
 .IP
 tether bt setup
+.PP
+Pause clipboard sync while working with something private, then resume:
+.IP
+tether clipboard off
+.IP
+tether clipboard on
+.PP
+Connection state for a script:
+.IP
+tether \-\-json bt connection
 .SH FILES
 .TP
 \fB/usr/lib/systemd/user/tetherd.service\fR

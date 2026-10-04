@@ -1,6 +1,7 @@
 #include "tether/client.hpp"
 #include "tether/base64.hpp"
 #include "tether/crypto.hpp"
+#include "tether/i18n.hpp"
 #include "tether/net.hpp"
 
 #include <arpa/inet.h>
@@ -10,6 +11,7 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <netdb.h>
 #include <nlohmann/json.hpp>
 #include <poll.h>
@@ -65,7 +67,7 @@ namespace tether {
     // symlink is what 'systemctl --user enable' writes. Spawning our own tetherd
     // alongside it leaves an orphan holding the TCP listener, which the unit then
     // cannot bind, so it would restart into the failure until systemd gives up.
-    static bool systemd_owns_tetherd() {
+    bool systemd_owns_tetherd() {
         std::filesystem::path config;
         if (const char* config_home = std::getenv("XDG_CONFIG_HOME"); config_home && *config_home == '/')
             config = config_home;
@@ -76,6 +78,29 @@ namespace tether {
 
         std::error_code ec;
         return std::filesystem::exists(config / "systemd/user/default.target.wants/tetherd.service", ec);
+    }
+
+    std::string daemon_restart_hint() {
+        if (systemd_owns_tetherd())
+            return _("Restart it with:\n    systemctl --user restart tetherd");
+        return _("Stop it and it restarts on demand:\n    pkill tetherd");
+    }
+
+    std::string daemon_unreachable_hint() {
+        std::string log_path = "$XDG_STATE_HOME/tether/tetherd.log";
+        try {
+            log_path = get_state_dir() + "/tetherd.log";
+        } catch (const std::exception&) {
+        }
+        if (systemd_owns_tetherd())
+            return tr_format(_("The Tether daemon is not running. Start it with:\n"
+                               "    systemctl --user start tetherd\n"
+                               "If it stops again, the reason is in {}"),
+                             log_path);
+        return tr_format(_("The Tether daemon is not running, and could not be started on demand. The reason "
+                           "is in {}\n"
+                           "To have systemd keep it running: systemctl --user enable --now tetherd"),
+                         log_path);
     }
 
     void spawn_daemon() {
@@ -349,7 +374,9 @@ namespace tether {
         return response;
     }
 
-    bool Client::send_file(const std::string& path, std::string& err_out) {
+    bool Client::send_file(const std::string& path,
+                           std::string& err_out,
+                           const std::function<void(size_t sent_bytes, size_t total_bytes)>& progress) {
         if (path.empty() || !std::filesystem::exists(path)) {
             err_out = "Invalid or missing file path.";
             return false;
@@ -386,10 +413,13 @@ namespace tether {
             }
             return false;
         }
+        if (progress)
+            progress(0, file_size);
 
         const size_t chunk_size = 512 * 1024;
         std::vector<unsigned char> buffer(chunk_size);
         int chunk_idx = 0;
+        size_t sent = 0;
 
         while (file) {
             file.read(reinterpret_cast<char*>(buffer.data()), chunk_size);
@@ -412,6 +442,9 @@ namespace tether {
                 }
                 return false;
             }
+            sent += bytes_read;
+            if (progress)
+                progress(sent, file_size);
         }
 
         nlohmann::json j_end;

@@ -1,5 +1,7 @@
 #include "devices_view.hpp"
+#include "banners.hpp"
 #include "daemon_client.hpp"
+#include "toast.hpp"
 #include "tray.hpp"
 #include "ui_util.hpp"
 #include <tether/i18n.hpp>
@@ -9,6 +11,7 @@
 #include <filesystem>
 #include <memory>
 #include <string>
+#include <tether/client.hpp>
 #include <tether/crypto.hpp>
 #include <tether/discovery.hpp>
 #include <tether/version.hpp>
@@ -58,6 +61,9 @@ namespace tether::ui {
 
             GtkWidget* lbl_unpaired_name = nullptr;
             GtkWidget* lbl_unpaired_ip = nullptr;
+            GtkWidget* btn_pair_request = nullptr;
+            GtkWidget* btn_pair_accept = nullptr;
+            GtkWidget* btn_pair_reject = nullptr;
 
             std::string selected_bt_address;
             std::string selected_bt_name;
@@ -99,6 +105,7 @@ namespace tether::ui {
 
             // Files waiting to go to the phone, front is in flight.
             GtkWidget* dropzone = nullptr;
+            GtkWidget* send_progress = nullptr;
             std::deque<std::filesystem::path> send_queue;
             size_t send_batch_total = 0;
             size_t send_failed = 0;
@@ -111,6 +118,83 @@ namespace tether::ui {
         void set_status_action(const std::string& text) { set_text(g_devices.lbl_action_status, text); }
 
         constexpr int BT_PROGRESS_TIMEOUT_SECONDS = 60;
+
+        // The daemon reports pairing as step names meant for its log. These are
+        // the same moments in words.
+        std::string describe_pair_step(const std::string& step, const std::string& detail) {
+            if (step == "discovering" || step == "rediscovering")
+                return step == "discovering" ? _("Looking for the iPhone nearby…")
+                                             : _("Looking for the iPhone again…");
+            if (step == "connecting")
+                // TRANSLATORS: {} is a device name.
+                return tr_format(_("Connecting to {}…"), detail);
+            if (step == "pairing")
+                // TRANSLATORS: {} is a device name.
+                return tr_format(_("Pairing with {}… Confirm on the iPhone when it asks."), detail);
+            if (step == "confirm")
+                // TRANSLATORS: {} is a six-digit code.
+                return tr_format(_("Check that both devices show the code {}."), detail);
+            if (step == "settling")
+                return _("Waiting for the link to settle…");
+            if (step == "retrying")
+                return _("The iPhone refused the connection. Trying once more…");
+            if (step == "paired")
+                // TRANSLATORS: {} is a device name.
+                return tr_format(_("Paired with {}."), detail);
+            if (step == "already_paired")
+                // TRANSLATORS: {} is a device name.
+                return tr_format(_("{} is already paired."), detail);
+            if (step == "warning" || step == "error")
+                return detail;
+            return detail.empty() ? step : step + "  " + detail;
+        }
+
+        bool is_pending_pair(const std::string& fingerprint) {
+            for (const auto& req : g_devices.pending_pairing_requests) {
+                if (req.fingerprint == fingerprint)
+                    return true;
+            }
+            return false;
+        }
+
+        // The banner and the tray follow this view's list of requests.
+        void sync_pending_pairs() {
+            std::vector<PendingPair> requests;
+            for (const auto& req : g_devices.pending_pairing_requests) {
+                bool is_paired = false;
+                for (const auto& p : g_devices.paired_devices) {
+                    if (p.first == req.fingerprint)
+                        is_paired = true;
+                }
+                if (is_paired)
+                    continue;
+                requests.push_back(
+                    {req.fingerprint, req.name, req.addresses.empty() ? std::string{} : req.addresses[0].address});
+            }
+            banners_set_pending_pairs(requests);
+            tray_set_pending_pairs(static_cast<int>(requests.size()));
+        }
+
+        void remove_pending_pair(const std::string& fingerprint) {
+            g_devices.pending_pairing_requests.erase(
+                std::remove_if(g_devices.pending_pairing_requests.begin(),
+                               g_devices.pending_pairing_requests.end(),
+                               [&](const tether::DiscoveredDevice& d) { return d.fingerprint == fingerprint; }),
+                g_devices.pending_pairing_requests.end());
+        }
+
+        void set_send_progress(double fraction, const std::string& text) {
+            if (!g_devices.send_progress)
+                return;
+            gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(g_devices.send_progress), fraction);
+            gtk_progress_bar_set_text(GTK_PROGRESS_BAR(g_devices.send_progress), text.c_str());
+            gtk_widget_show(g_devices.send_progress);
+        }
+
+        void hide_send_progress() {
+            if (g_devices.send_progress)
+                gtk_widget_hide(g_devices.send_progress);
+        }
 
         // Progress text describes a moment, not a state, so it expires.
         void set_bt_progress(const std::string& text) {
@@ -242,6 +326,7 @@ namespace tether::ui {
             update_action_bt_scan_controls();
             set_status_action(_("Scanning for nearby devices..."));
             set_status_main(_("Scanning for nearby devices..."));
+            main_window_set_scanning(true);
             daemon_send({{"command", "bt_status"}});
             daemon_send({{"command", "bt_scan"}});
         }
@@ -298,7 +383,7 @@ namespace tether::ui {
             if (!daemon_send({{"command", "bt_airpods_connect"},
                               {"address", g_devices.selected_bt_address},
                               {"connect", !device->value("connected", false)}})) {
-                set_status_main(_("Could not reach the Tether daemon."));
+                show_toast(_("Could not reach the Tether daemon."), ToastLevel::Error);
                 return;
             }
             // Held until the result, so a slow Connect is not sent twice.
@@ -432,18 +517,19 @@ namespace tether::ui {
                 }
             }
 
-            // A package upgrade replaces the binaries but leaves the old tetherd running.
+            // A package upgrade replaces the binaries but leaves the old tetherd
+            // running. The banner at the top says so app-wide; this is the reminder
+            // beside the Bluetooth state it distorts.
             if (!g_devices.bt_status.empty()) {
                 const std::string running = g_devices.bt_status.value("version", "");
                 if (running != TETHER_VERSION) {
                     if (!mode.empty())
                         mode += "\n";
                     // No version field at all means a daemon older than the field itself.
-                    mode += tr_format(_("The running tetherd is {}, but this is tether {}. Stop it and it\n"
-                                        "restarts on demand:\n"
-                                        "    pkill tetherd\n"),
+                    mode += tr_format(_("The running tetherd is {}, but this is tether {}. {}"),
                                       running.empty() ? _("an older build") : running.c_str(),
-                                      TETHER_VERSION);
+                                      TETHER_VERSION,
+                                      tether::daemon_restart_hint());
                 }
             }
             set_text(g_devices.lbl_bt_mode, mode);
@@ -562,10 +648,19 @@ namespace tether::ui {
                 gtk_stack_set_visible_child_name(GTK_STACK(g_devices.right_pane_stack), "pair");
                 set_markup(g_devices.lbl_unpaired_name,
                            ("<b>" + escape_markup(g_devices.selected_device_name) + "</b>"));
-                // TRANSLATORS: {0} is an IP address, {1} a port number.
-                set_text(g_devices.lbl_unpaired_ip,
-                         tether::tr_format(
-                             _("Found at {0}:{1}"), g_devices.selected_device_ip, g_devices.selected_device_port));
+                // A device that asked to pair gets Accept and Reject; one merely
+                // seen on the network gets Pair, which asks it.
+                const bool pending = is_pending_pair(g_devices.selected_device_fp);
+                if (pending)
+                    set_text(g_devices.lbl_unpaired_ip, _("This device asked to pair with this computer."));
+                else
+                    // TRANSLATORS: {0} is an IP address, {1} a port number.
+                    set_text(g_devices.lbl_unpaired_ip,
+                             tether::tr_format(
+                                 _("Found at {0}:{1}"), g_devices.selected_device_ip, g_devices.selected_device_port));
+                gtk_widget_set_visible(g_devices.btn_pair_request, !pending && !g_devices.selected_device_ip.empty());
+                gtk_widget_set_visible(g_devices.btn_pair_accept, pending);
+                gtk_widget_set_visible(g_devices.btn_pair_reject, pending);
             }
         }
 
@@ -615,7 +710,15 @@ namespace tether::ui {
             j["command"] = "accept_device";
             j["fingerprint"] = g_devices.selected_device_fp;
             j["device_name"] = g_devices.selected_device_name;
-            daemon_send(j);
+            if (!daemon_send(j))
+                show_toast(_("Could not reach the Tether daemon."), ToastLevel::Error);
+        }
+
+        void on_reject_click(GtkWidget*, gpointer) {
+            if (g_devices.selected_device_fp.empty())
+                return;
+            if (!daemon_send({{"command", "reject_device"}, {"fingerprint", g_devices.selected_device_fp}}))
+                show_toast(_("Could not reach the Tether daemon."), ToastLevel::Error);
         }
 
         std::string new_bt_operation_id() {
@@ -634,6 +737,7 @@ namespace tether::ui {
                               {"operation_id", g_devices.bt_operation_id}})) {
                 g_devices.bt_operation_id.clear();
                 set_bt_progress(_("Could not reach the Tether daemon."));
+                show_toast(_("Could not reach the Tether daemon."), ToastLevel::Error);
                 return;
             }
             gtk_widget_set_sensitive(g_devices.btn_bt_pair, FALSE);
@@ -719,10 +823,15 @@ namespace tether::ui {
                 status += " " + tether::tr_format(_("({0} of {1})"), index, g_devices.send_batch_total);
             }
             set_status_action(status);
+            set_send_progress(0.0, status);
             nlohmann::json j;
             j["command"] = "send_file";
             j["path"] = path.string();
-            daemon_send(j);
+            if (!daemon_send(j)) {
+                hide_send_progress();
+                g_devices.send_queue.clear();
+                show_toast(_("Could not reach the Tether daemon; nothing was sent."), ToastLevel::Error);
+            }
         }
 
         // skipped counts items that came in with the batch but are not sendable
@@ -732,6 +841,7 @@ namespace tether::ui {
                 return;
             if (!daemon_connected()) {
                 set_status_action(_("Daemon unavailable."));
+                show_toast(_("The Tether daemon is not running, so nothing was sent."), ToastLevel::Error);
                 return;
             }
             const bool idle = g_devices.send_queue.empty();
@@ -894,12 +1004,15 @@ namespace tether::ui {
             }
             devices_view_refresh();
             update_wifi_indicator();
+            sync_pending_pairs();
         }
 
     } // namespace
 
     void devices_view_handle_disconnect() {
         set_bt_progress("");
+        hide_send_progress();
+        main_window_set_scanning(false);
         g_devices.airpods_connecting = false;
         g_devices.send_queue.clear();
         g_devices.send_batch_total = 0;
@@ -910,6 +1023,7 @@ namespace tether::ui {
 
     void devices_view_trigger_discovery() {
         set_status_main(_("Scanning for nearby devices..."));
+        main_window_set_scanning(true);
         // Refresh means both routes: mDNS for Wi-Fi peers, and a real BlueZ discovery for Bluetooth.
         daemon_send({{"command", "discover"}});
         daemon_send({{"command", "bt_status"}});
@@ -1182,6 +1296,23 @@ namespace tether::ui {
             return true;
         }
         if (command == "pair_rejected") {
+            if (event.value("direction", "") == "inbound") {
+                // Our own refusal, from the banner, the CLI or the popup.
+                const std::string fp = event.value("fingerprint", "");
+                remove_pending_pair(fp);
+                if (g_devices.selected_device_fp == fp) {
+                    g_devices.selected_device_fp.clear();
+                    g_devices.selected_device_name.clear();
+                    g_devices.selected_device_ip.clear();
+                }
+                devices_view_refresh();
+                update_right_pane();
+                sync_pending_pairs();
+                // TRANSLATORS: {} is a device name.
+                show_toast(tether::tr_format(_("Rejected the pairing request from {}."),
+                                             event.value("device_name", _("Unknown Device"))));
+                return true;
+            }
 
             const std::string reason = event.value("reason", "");
             std::string message;
@@ -1198,6 +1329,11 @@ namespace tether::ui {
                 message = _("Pair request was rejected.");
             set_text(g_devices.lbl_unpaired_ip, message);
             set_status_main(message);
+            show_toast(message, ToastLevel::Error);
+            return true;
+        }
+        if (command == "accept_device_result" || command == "reject_device_result") {
+            // The matching pair_accepted / pair_rejected broadcast carries the news.
             return true;
         }
         if (command == "pair_request_received" || command == "untrusted_client_connected") {
@@ -1225,6 +1361,10 @@ namespace tether::ui {
             if (!exists) {
                 g_devices.pending_pairing_requests.push_back(req);
                 devices_view_refresh();
+                sync_pending_pairs();
+                if (command == "pair_request_received")
+                    // TRANSLATORS: {} is a device name.
+                    show_toast(tether::tr_format(_("{} wants to pair. Accept or reject it above."), req.name));
             }
             return true;
         }
@@ -1238,13 +1378,13 @@ namespace tether::ui {
 
                 // paired_devices is rebuilt from known_hosts.json on every refresh, and
                 // the daemon only emits this after writing that file.
-                g_devices.pending_pairing_requests.erase(
-                    std::remove_if(g_devices.pending_pairing_requests.begin(),
-                                   g_devices.pending_pairing_requests.end(),
-                                   [&](const tether::DiscoveredDevice& d) { return d.fingerprint == fp; }),
-                    g_devices.pending_pairing_requests.end());
+                remove_pending_pair(fp);
                 devices_view_refresh();
                 update_right_pane();
+                sync_pending_pairs();
+                // TRANSLATORS: {} is a device name.
+                show_toast(tether::tr_format(_("Paired with {}."), event.value("device_name", _("Unknown Device"))),
+                           ToastLevel::Success);
             }
             return true;
         }
@@ -1283,10 +1423,20 @@ namespace tether::ui {
             set_status_main(_("Ready"));
             return true;
         }
+        if (command == "file_send_progress") {
+            const double total = event.value("total", 0.0);
+            const double sent = event.value("sent", 0.0);
+            const std::string name = std::filesystem::path(event.value("path", "")).filename().string();
+            const int percent = total > 0 ? static_cast<int>(sent * 100.0 / total) : 0;
+            // TRANSLATORS: {0} is a file name, {1} a percentage.
+            set_send_progress(total > 0 ? sent / total : 0.0, tether::tr_format(_("Sending {0}… {1}%"), name, percent));
+            return true;
+        }
         if (command == "file_send_complete") {
             if (!event.value("success", true)) {
                 ++g_devices.send_failed;
                 g_devices.send_last_error = event.value("message", "");
+                show_toast(event.value("message", _("Send failed.")), ToastLevel::Error);
             }
             if (!g_devices.send_queue.empty())
                 g_devices.send_queue.pop_front();
@@ -1314,6 +1464,9 @@ namespace tether::ui {
                               P_("Skipped {} non-file item.", "Skipped {} non-file items.", g_devices.send_skipped),
                               g_devices.send_skipped);
             set_status_action(message);
+            hide_send_progress();
+            if (g_devices.send_failed == 0)
+                show_toast(message, ToastLevel::Success);
 
             g_devices.send_batch_total = 0;
             g_devices.send_failed = 0;
@@ -1322,8 +1475,10 @@ namespace tether::ui {
             return true;
         }
         if (command == "clipboard_content") {
-            set_status_action(event.value("content", std::string{}).empty() ? _("Clipboard is empty.")
-                                                                            : _("Desktop Clipboard Sync triggered."));
+            const bool empty = event.value("content", std::string{}).empty();
+            set_status_action(empty ? _("Clipboard is empty.") : _("Clipboard sent to the iPhone."));
+            show_toast(empty ? _("The clipboard is empty; nothing to send.") : _("Clipboard sent to the iPhone."),
+                       empty ? ToastLevel::Info : ToastLevel::Success);
             return true;
         }
         if (command == "bt_status") {
@@ -1392,6 +1547,9 @@ namespace tether::ui {
             const std::string message = event.value("message", "");
             set_status_main(message);
             set_bt_progress(message);
+            main_window_set_scanning(false);
+            if (!event.value("success", false) && !message.empty())
+                show_toast(message, ToastLevel::Error);
             // A failed scan already carries the reason; only a scan that really
             // ran and found nothing wants the "check the phone" advice.
             if (event.value("success", false) && (g_devices.bt_devices.empty() || g_devices.select_bt_after_scan)) {
@@ -1437,19 +1595,22 @@ namespace tether::ui {
         }
         if (command == "bt_airpods_connect_result") {
             g_devices.airpods_connecting = false;
-            if (!event.value("success", false))
+            if (!event.value("success", false)) {
                 set_status_main(event.value("message", ""));
+                show_toast(event.value("message", _("The AirPods did not connect.")), ToastLevel::Error);
+            }
             update_right_pane();
             return true;
         }
         if (command == "bt_pair_progress") {
-            set_bt_progress(event.value("step", "") + "  " + event.value("detail", ""));
+            set_bt_progress(describe_pair_step(event.value("step", ""), event.value("detail", "")));
             return true;
         }
         if (command == "bt_pair_result" || command == "bt_unpair_result") {
             gtk_widget_set_sensitive(g_devices.btn_bt_pair, TRUE);
             g_devices.bt_operation_id.clear();
             set_bt_progress(event.value("message", ""));
+            show_toast(event.value("message", ""), event.value("success", true) ? ToastLevel::Success : ToastLevel::Error);
             // The bond and the supervised device both just changed.
             daemon_send({{"command", "bt_status"}});
             daemon_send({{"command", "bt_list_devices"}});
@@ -1778,11 +1939,25 @@ namespace tether::ui {
         gtk_style_context_add_class(gtk_widget_get_style_context(pair_btn), "suggested-action");
         g_signal_connect(pair_btn, "clicked", G_CALLBACK(on_pair_click), nullptr);
         gtk_box_pack_start(GTK_BOX(pair_box), pair_btn, FALSE, FALSE, 0);
+        g_devices.btn_pair_request = pair_btn;
 
-        // optional accept override button
-        GtkWidget* accept_btn = gtk_button_new_with_label(_("Force Trust (Accept Pending)"));
-        g_signal_connect(accept_btn, "clicked", G_CALLBACK(on_accept_click), nullptr);
-        gtk_box_pack_start(GTK_BOX(pair_box), accept_btn, FALSE, FALSE, 0);
+        // For a device that asked first: the same two answers the prompt offers.
+        GtkWidget* pair_answers = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        gtk_widget_set_halign(pair_answers, GTK_ALIGN_CENTER);
+        g_devices.btn_pair_reject = gtk_button_new_with_label(_("Reject"));
+        g_signal_connect(g_devices.btn_pair_reject, "clicked", G_CALLBACK(on_reject_click), nullptr);
+        gtk_box_pack_start(GTK_BOX(pair_answers), g_devices.btn_pair_reject, FALSE, FALSE, 0);
+        g_devices.btn_pair_accept = gtk_button_new_with_label(_("Accept"));
+        gtk_style_context_add_class(gtk_widget_get_style_context(g_devices.btn_pair_accept), "suggested-action");
+        g_signal_connect(g_devices.btn_pair_accept, "clicked", G_CALLBACK(on_accept_click), nullptr);
+        gtk_box_pack_start(GTK_BOX(pair_answers), g_devices.btn_pair_accept, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(pair_box), pair_answers, FALSE, FALSE, 0);
+        // Shown per selection, so show_all must leave them alone.
+        gtk_widget_show_all(pair_answers);
+        gtk_widget_set_no_show_all(g_devices.btn_pair_accept, TRUE);
+        gtk_widget_set_no_show_all(g_devices.btn_pair_reject, TRUE);
+        gtk_widget_set_no_show_all(pair_btn, TRUE);
+        gtk_widget_show(pair_btn);
 
         gtk_stack_add_named(GTK_STACK(g_devices.right_pane_stack), pair_box, "pair");
 
@@ -1813,6 +1988,12 @@ namespace tether::ui {
         gtk_style_context_add_class(gtk_widget_get_style_context(btn_send_file), "suggested-action");
         g_signal_connect(btn_send_file, "clicked", G_CALLBACK(on_choose_file), nullptr);
         gtk_box_pack_start(GTK_BOX(dropzone), btn_send_file, FALSE, FALSE, 0);
+
+        g_devices.send_progress = gtk_progress_bar_new();
+        gtk_progress_bar_set_show_text(GTK_PROGRESS_BAR(g_devices.send_progress), TRUE);
+        gtk_progress_bar_set_ellipsize(GTK_PROGRESS_BAR(g_devices.send_progress), PANGO_ELLIPSIZE_MIDDLE);
+        gtk_widget_set_no_show_all(g_devices.send_progress, TRUE);
+        gtk_box_pack_start(GTK_BOX(dropzone), g_devices.send_progress, FALSE, FALSE, 0);
 
         GtkWidget* btn_send_clip = gtk_button_new_with_label(_("Send Clipboard"));
         g_signal_connect(btn_send_clip,
@@ -1868,8 +2049,10 @@ namespace tether::ui {
 
         gtk_stack_add_named(GTK_STACK(g_devices.right_pane_stack), action_page, "action");
 
+        // Both directions: the AirPods and Bluetooth panes outgrow a short window
+        // at larger text sizes and were clipped with no way to reach the rest.
         GtkWidget* right_scroll = gtk_scrolled_window_new(nullptr, nullptr);
-        gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(right_scroll), GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
+        gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(right_scroll), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
         gtk_scrolled_window_set_propagate_natural_width(GTK_SCROLLED_WINDOW(right_scroll), TRUE);
         gtk_container_add(GTK_CONTAINER(right_scroll), g_devices.right_pane_stack);
         gtk_paned_pack2(GTK_PANED(paned), right_scroll, TRUE, FALSE);

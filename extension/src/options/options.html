@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="color-scheme" content="light dark">
+  <title>Tether settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main class="options">
+    <h1>Tether</h1>
+    <p class="intro">One-time codes that arrive on your iPhone are offered to the page asking for them.</p>
+
+    <form id="form">
+      <fieldset>
+        <legend>Autofill</legend>
+
+        <label class="opt">
+          <input type="checkbox" id="autofill" name="autofill">
+          <span>
+            <span class="opt-title">Autofill automatically</span>
+            <span class="opt-help">Fill the code as soon as it arrives. Off: use "Fill on this page" in the toolbar popup.</span>
+          </span>
+        </label>
+
+        <label class="opt">
+          <input type="checkbox" id="toast" name="toast">
+          <span>
+            <span class="opt-title">Show a toast when a code is filled</span>
+            <span class="opt-help">A small "Code from iPhone filled" note with an Undo button, gone after a few seconds.</span>
+          </span>
+        </label>
+
+        <label class="opt">
+          <input type="checkbox" id="askUnknownSites" name="askUnknownSites">
+          <span>
+            <span class="opt-title">Ask before filling on sites I have not used before</span>
+            <span class="opt-help">The first time a site asks for a code, confirm on the page before it is filled.</span>
+          </span>
+        </label>
+      </fieldset>
+
+      <div class="known">
+        <span id="known-count" class="muted"></span>
+        <button id="clear-known" class="btn small" type="button">Forget remembered sites</button>
+      </div>
+    </form>
+
+    <p id="saved" class="saved" role="status" aria-live="polite"></p>
+  </main>
+  <script src="options.js"></script>
+</body>
+</html>

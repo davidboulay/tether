@@ -4,7 +4,9 @@
 #include "contact_completion.hpp"
 #include "daemon_client.hpp"
 #include "message_format.hpp"
+#include "pending_send.hpp"
 #include "prefs.hpp"
+#include "toast.hpp"
 #include "tray.hpp"
 #include "ui_util.hpp"
 
@@ -49,6 +51,9 @@ namespace tether::ui {
             bool threads_known = false;
             size_t thread_count = 0;
             bool sending = false;
+            std::string active_operation_id;
+            std::string active_thread;
+            PendingSends pending_sends;
             GtkWidget* composer_notice = nullptr;
             // Rebuilding the thread list destroys and recreates the selected row.
             // The handler is blocked across that so the churn is not mistaken for
@@ -87,6 +92,19 @@ namespace tether::ui {
 
             // Folded needle from the search box; empty shows everything.
             std::string search_needle;
+            // Threads the daemon found the needle in, by message body. The
+            // sidebar only knows each thread's preview, so bodies are searched
+            // on the daemon's side and the hits merged into the filter.
+            std::set<std::string> search_hits;
+            std::string search_sent;
+            guint search_idle_id = 0;
+            // Whether the open conversation is a group, which is when a bubble
+            // needs to say who sent it.
+            bool selected_group = false;
+            // The bubble shown for a message the phone has not confirmed yet.
+            GtkWidget* pending_row = nullptr;
+            GtkWidget* pending_bubble = nullptr;
+            GtkWidget* pending_note = nullptr;
             // Whether the daemon says the selected thread can be replied to, and
             // why not when it cannot.
             bool selected_repliable = false;
@@ -112,6 +130,7 @@ namespace tether::ui {
         void update_placeholder();
         void apply_row_selection(GtkWidget* row);
         void clear_selection();
+        void clear_conversation();
         void switch_thread(const std::string& key);
         void hide_send_error();
         // `offer_permissions` shows the button that re-solicits the iPhone's
@@ -163,7 +182,7 @@ namespace tether::ui {
             g_messages.rendered_last_stamp = 0;
             g_messages.rendered_last_outgoing = false;
             if (g_messages.conversation)
-                clear_list_box(g_messages.conversation);
+                clear_conversation();
             hide_send_error();
 
             const auto draft = g_messages.drafts.find(key);
@@ -290,11 +309,17 @@ namespace tether::ui {
             return row;
         }
 
-        GtkWidget* build_message_row(const nlohmann::json& message, bool show_stamp) {
+        GtkWidget* build_message_row(const nlohmann::json& message, bool show_stamp, bool show_sender = false) {
             const bool outgoing = message.value("outgoing", false);
             const std::string body = message.value("body", "");
             const std::string stamp =
                 show_stamp ? format_timestamp(message.value("timestamp", static_cast<int64_t>(0))) : "";
+            std::string sender;
+            if (show_sender && !outgoing) {
+                sender = message.value("name", "");
+                if (sender.empty())
+                    sender = message.value("address", "");
+            }
 
             GtkWidget* row = gtk_list_box_row_new();
             gtk_list_box_row_set_selectable(GTK_LIST_BOX_ROW(row), FALSE);
@@ -312,6 +337,16 @@ namespace tether::ui {
                 gtk_label_set_xalign(GTK_LABEL(time_label), outgoing ? 1.0 : 0.0);
                 gtk_style_context_add_class(gtk_widget_get_style_context(time_label), "muted");
                 gtk_box_pack_start(GTK_BOX(box), time_label, FALSE, FALSE, 0);
+            }
+
+            // In a group, who said it is half the message.
+            if (!sender.empty()) {
+                GtkWidget* sender_label = gtk_label_new(sender.c_str());
+                gtk_label_set_xalign(GTK_LABEL(sender_label), 0.0);
+                gtk_label_set_ellipsize(GTK_LABEL(sender_label), PANGO_ELLIPSIZE_END);
+                gtk_label_set_max_width_chars(GTK_LABEL(sender_label), 40);
+                gtk_style_context_add_class(gtk_widget_get_style_context(sender_label), "tether-sender");
+                gtk_box_pack_start(GTK_BOX(box), sender_label, FALSE, FALSE, 0);
             }
 
             GtkWidget* bubble = gtk_label_new(nullptr);
@@ -333,12 +368,110 @@ namespace tether::ui {
             set_accessible_name(bubble,
                                 // TRANSLATORS: Read aloud before a message you sent, {} is the message.
                                 outgoing ? tether::tr_format(_("Sent: {}"), body)
-                                         // TRANSLATORS: Read aloud before a message you received, {} is the message.
-                                         : tether::tr_format(_("Received: {}"), body));
+                                // TRANSLATORS: Read aloud before a message you received, {0} is the sender, {1}
+                                // the message.
+                                : !sender.empty() ? tether::tr_format(_("Received from {0}: {1}"), sender, body)
+                                                  // TRANSLATORS: Read aloud before a message you received, {} is
+                                                  // the message.
+                                                  : tether::tr_format(_("Received: {}"), body));
             gtk_box_pack_start(GTK_BOX(box), bubble, FALSE, FALSE, 0);
 
             gtk_container_add(GTK_CONTAINER(row), box);
             return row;
+        }
+
+        // The grey bubble every other messaging client shows while a message is
+        // on its way. It becomes the real bubble when the phone lists the
+        // message, or a red one with Retry when the phone refuses it.
+        void forget_pending_row() {
+            g_messages.pending_row = nullptr;
+            g_messages.pending_bubble = nullptr;
+            g_messages.pending_note = nullptr;
+        }
+
+        void drop_pending_row() {
+            if (g_messages.pending_row)
+                gtk_widget_destroy(g_messages.pending_row);
+            forget_pending_row();
+        }
+
+        // Every clear of the conversation goes through here: the grey bubble
+        // dies with the rows, and the pointers to it must not outlive them.
+        void clear_conversation() {
+            clear_list_box(g_messages.conversation);
+            forget_pending_row();
+        }
+
+        void on_send_clicked(GtkWidget*, gpointer);
+
+        void on_retry_clicked(GtkWidget*, gpointer) {
+            if (g_messages.sending || !g_messages.map_open || !g_messages.selected_repliable)
+                return;
+            auto* pending = g_messages.pending_sends.for_thread(g_messages.selected_thread);
+            if (!pending || pending->failure.empty())
+                return;
+            set_composer_text(pending->body);
+            on_send_clicked(nullptr, nullptr);
+        }
+
+        void show_pending_row(const std::string& body) {
+            drop_pending_row();
+            nlohmann::json message;
+            message["outgoing"] = true;
+            message["body"] = body;
+            message["timestamp"] = static_cast<int64_t>(std::time(nullptr));
+            GtkWidget* row = build_message_row(message, true);
+            GtkWidget* box = gtk_bin_get_child(GTK_BIN(row));
+            GList* children = gtk_container_get_children(GTK_CONTAINER(box));
+            GtkWidget* bubble = children ? GTK_WIDGET(g_list_last(children)->data) : nullptr;
+            g_list_free(children);
+            if (bubble)
+                gtk_style_context_add_class(gtk_widget_get_style_context(bubble), "tether-bubble-pending");
+
+            GtkWidget* note_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+            gtk_widget_set_halign(note_box, GTK_ALIGN_END);
+            GtkWidget* note = gtk_label_new(_("Sending…"));
+            gtk_style_context_add_class(gtk_widget_get_style_context(note), "muted");
+            gtk_box_pack_start(GTK_BOX(note_box), note, FALSE, FALSE, 0);
+            gtk_box_pack_start(GTK_BOX(box), note_box, FALSE, FALSE, 0);
+
+            g_messages.pending_row = row;
+            g_messages.pending_bubble = bubble;
+            g_messages.pending_note = note;
+            gtk_list_box_insert(GTK_LIST_BOX(g_messages.conversation), row, -1);
+            gtk_widget_show_all(row);
+        }
+
+        void mark_pending_failed(const std::string& reason) {
+            if (!g_messages.pending_row)
+                return;
+            if (g_messages.pending_bubble) {
+                GtkStyleContext* context = gtk_widget_get_style_context(g_messages.pending_bubble);
+                gtk_style_context_remove_class(context, "tether-bubble-pending");
+                gtk_style_context_remove_class(context, "tether-bubble-out");
+                gtk_style_context_add_class(context, "tether-bubble-failed");
+            }
+            if (g_messages.pending_note) {
+                set_text(g_messages.pending_note, reason.empty() ? _("Not sent.") : reason);
+                GtkWidget* note_box = gtk_widget_get_parent(g_messages.pending_note);
+                GtkWidget* retry = gtk_button_new_with_label(_("Retry"));
+                gtk_button_set_relief(GTK_BUTTON(retry), GTK_RELIEF_NONE);
+                g_signal_connect(retry, "clicked", G_CALLBACK(on_retry_clicked), nullptr);
+                gtk_box_pack_start(GTK_BOX(note_box), retry, FALSE, FALSE, 0);
+                gtk_widget_show_all(note_box);
+            }
+        }
+
+        void restore_pending_row() {
+            drop_pending_row();
+            auto* pending = g_messages.pending_sends.for_thread(g_messages.selected_thread);
+            if (!pending)
+                return;
+            show_pending_row(pending->body);
+            if (!pending->failure.empty())
+                mark_pending_failed(pending->failure);
+            else if (pending->succeeded)
+                set_text(g_messages.pending_note, _("Sent"));
         }
 
         GtkAdjustment* conversation_adjustment() {
@@ -408,12 +541,42 @@ namespace tether::ui {
             if (g_messages.search_needle.empty())
                 return TRUE;
             const char* haystack = static_cast<const char*>(g_object_get_data(G_OBJECT(row), "search"));
-            return haystack && std::strstr(haystack, g_messages.search_needle.c_str()) != nullptr;
+            if (haystack && std::strstr(haystack, g_messages.search_needle.c_str()) != nullptr)
+                return TRUE;
+            const char* key = static_cast<const char*>(g_object_get_data(G_OBJECT(row), "thread"));
+            return key && g_messages.search_hits.count(key) > 0;
+        }
+
+        // Asked once the typing pauses, not per keystroke.
+        gboolean search_bodies_idle(gpointer) {
+            g_messages.search_idle_id = 0;
+            const std::string query = g_messages.search_needle;
+            if (query.size() < 2) {
+                // Too short to ask about; hits from a longer query must not linger.
+                if (!g_messages.search_hits.empty()) {
+                    g_messages.search_hits.clear();
+                    gtk_list_box_invalidate_filter(GTK_LIST_BOX(g_messages.thread_list));
+                }
+                g_messages.search_sent.clear();
+                return G_SOURCE_REMOVE;
+            }
+            if (query == g_messages.search_sent)
+                return G_SOURCE_REMOVE;
+            g_messages.search_sent = query;
+            daemon_send({{"command", "bt_search_messages"}, {"query", query}});
+            return G_SOURCE_REMOVE;
         }
 
         void on_search_changed(GtkSearchEntry* entry, gpointer) {
             g_messages.search_needle = fold(gtk_entry_get_text(GTK_ENTRY(entry)));
+            if (g_messages.search_needle.empty()) {
+                g_messages.search_hits.clear();
+                g_messages.search_sent.clear();
+            }
             gtk_list_box_invalidate_filter(GTK_LIST_BOX(g_messages.thread_list));
+            if (g_messages.search_idle_id != 0)
+                g_source_remove(g_messages.search_idle_id);
+            g_messages.search_idle_id = g_timeout_add(250, search_bodies_idle, nullptr);
         }
 
         // One spelled several ways ("+15551234567", "5551234567"), daemon puts in one bucket.
@@ -533,7 +696,9 @@ namespace tether::ui {
                                      stamp - g_messages.rendered_last_stamp < GROUP_WINDOW_SECONDS &&
                                      same_local_day(g_messages.rendered_last_stamp, stamp);
 
-                gtk_list_box_insert(GTK_LIST_BOX(g_messages.conversation), build_message_row(message, !grouped), -1);
+                gtk_list_box_insert(GTK_LIST_BOX(g_messages.conversation),
+                                    build_message_row(message, !grouped, g_messages.selected_group),
+                                    -1);
                 g_messages.rendered_last_stamp = stamp;
                 g_messages.rendered_last_outgoing = outgoing;
             }
@@ -554,8 +719,19 @@ namespace tether::ui {
             for (const auto& message : messages)
                 handles.push_back(message.value("handle", ""));
 
-            if (handles == g_messages.rendered)
+            bool reconciled = false;
+            for (const auto& message : messages)
+                reconciled = g_messages.pending_sends.reconcile(g_messages.selected_thread,
+                                                                message.value("handle", ""),
+                                                                message.value("body", ""),
+                                                                message.value("outgoing", false),
+                                                                message.value("timestamp", int64_t{0})) ||
+                             reconciled;
+            if (handles == g_messages.rendered) {
+                if (reconciled || !g_messages.pending_row)
+                    restore_pending_row();
                 return;
+            }
 
             const bool opening = g_messages.rendered.empty();
             const bool pinned = g_messages.pin_next || opening || conversation_at_bottom();
@@ -569,13 +745,18 @@ namespace tether::ui {
                 if (GtkAdjustment* adjustment = conversation_adjustment())
                     g_messages.scroll_from_bottom =
                         conversation_bottom(adjustment) - gtk_adjustment_get_value(adjustment);
-                clear_list_box(g_messages.conversation);
+                clear_conversation();
                 g_messages.rendered_last_stamp = 0;
                 g_messages.rendered_last_outgoing = false;
                 from = 0;
             }
 
+            // Keep the synthetic row after the real messages, including unrelated
+            // incoming messages and failed sends. Only the confirmed echo or
+            // its matching phone replacement retires it.
+            drop_pending_row();
             append_message_rows(messages, from);
+            restore_pending_row();
             g_messages.rendered = handles;
             gtk_widget_show_all(g_messages.conversation);
 
@@ -727,24 +908,37 @@ namespace tether::ui {
                 update_composer_sensitivity();
                 focus_composer_soon();
                 set_status_main(_("No answer about that message; it may still have been sent."));
+                show_toast(_("No answer about that message; it may still have been sent."), ToastLevel::Error);
+                auto* pending =
+                    g_messages.pending_sends.for_result(g_messages.active_thread, g_messages.active_operation_id);
+                if (pending)
+                    pending->failure = _("No answer from the phone.");
+                restore_pending_row();
             }
             return G_SOURCE_REMOVE;
         }
 
         void on_send_clicked(GtkWidget*, gpointer) {
             const std::string body = composer_text();
-            if (body.empty() || g_messages.selected_thread.empty())
+            if (g_messages.sending || !g_messages.map_open || !g_messages.selected_repliable || body.empty() ||
+                g_messages.selected_thread.empty())
                 return;
 
             nlohmann::json j;
             j["command"] = "bt_send_message";
             j["thread"] = g_messages.selected_thread;
             j["body"] = body;
+            gchar* uuid = g_uuid_string_random();
+            const std::string operation_id(uuid);
+            g_free(uuid);
+            j["operation_id"] = operation_id;
             hide_send_error();
+            drop_pending_row();
             if (!daemon_send(j)) {
                 const char* reason = _("Could not reach the Tether daemon; the message was not sent.");
                 set_status_main(reason);
                 show_send_error(reason);
+                show_toast(reason, ToastLevel::Error);
                 return;
             }
 
@@ -752,10 +946,17 @@ namespace tether::ui {
             // real OBEX transfer and takes a moment; an unlocked box invites a
             // second copy of the same message. The watchdog is what stops a
             // result that never arrives from locking it for the whole session.
+            g_messages.pending_sends.put({operation_id, g_messages.selected_thread, body, {}, {}, false});
+            auto* pending = g_messages.pending_sends.for_thread(g_messages.selected_thread);
+            pending->previous_handles.insert(g_messages.rendered.begin(), g_messages.rendered.end());
+            g_messages.active_operation_id = operation_id;
+            g_messages.active_thread = g_messages.selected_thread;
             g_messages.sending = true;
             g_messages.send_watchdog_id = g_timeout_add_seconds(SEND_TIMEOUT_SECONDS, on_send_timeout, nullptr);
             update_composer_sensitivity();
             set_status_main(_("Sending…"));
+            show_pending_row(body);
+            g_messages.scroll_pin = true;
         }
 
         // Every messaging app has trained people that Enter sends and Shift+Enter
@@ -781,26 +982,47 @@ namespace tether::ui {
         }
 
         void on_send_result(const nlohmann::json& event) {
-            clear_sending();
-            update_composer_sensitivity();
-            focus_composer_soon();
-
+            const std::string thread = event.value("thread", "");
+            const std::string operation_id = event.value("operation_id", "");
+            auto* pending = g_messages.pending_sends.for_result(thread, operation_id);
+            if (!pending)
+                return; // Another client, or a delayed result from an older attempt.
+            if (operation_id == g_messages.active_operation_id) {
+                clear_sending();
+                update_composer_sensitivity();
+                focus_composer_soon();
+            }
+            const bool selected = same_thread(thread, g_messages.selected_thread);
             if (event.value("success", false)) {
-                // Only cleared once the phone accepted it, so a failed send
-                // leaves the text where the user can retry or copy it out.
-                g_messages.drafts.erase(g_messages.selected_thread);
-                set_composer_text("");
-                hide_send_error();
-                g_messages.pin_next = true;
-                // The conversation now exists under this key, so the thread list
-                // refresh that follows will select it like any other.
-                leave_compose();
-                set_status_main(_("Sent"));
+                pending->succeeded = true;
+                pending->failure.clear();
+                pending->handle = event.value("handle", "");
+                pending->timestamp = event.value("timestamp", int64_t{0});
+                // A delayed success must not erase edits made after a timeout.
+                for (auto it = g_messages.drafts.begin(); it != g_messages.drafts.end();) {
+                    if (same_thread(it->first, thread) && it->second == pending->body)
+                        it = g_messages.drafts.erase(it);
+                    else
+                        ++it;
+                }
+                if (selected) {
+                    if (composer_text() == pending->body)
+                        set_composer_text("");
+                    hide_send_error();
+                    g_messages.pin_next = true;
+                    leave_compose();
+                    restore_pending_row();
+                    request_messages(thread);
+                }
+                request_threads();
                 return;
             }
-            const std::string reason = event.value("message", _("The message was not sent."));
-            set_status_main(reason);
-            show_send_error(reason);
+            pending->failure = event.value("message", _("The message was not sent."));
+            if (selected) {
+                show_send_error(pending->failure);
+                restore_pending_row();
+            }
+            show_toast(pending->failure, ToastLevel::Error);
         }
 
         void clear_selection() {
@@ -824,6 +1046,7 @@ namespace tether::ui {
             g_messages.selected_name = name ? name : "";
             g_messages.selected_repliable = g_object_get_data(G_OBJECT(row), "repliable") != nullptr;
             g_messages.selected_block_reason = block_reason ? block_reason : "";
+            g_messages.selected_group = g_object_get_data(G_OBJECT(row), "group") != nullptr;
             // Which conversation is open is otherwise only legible from the
             // selection highlight in the list beside it.
             set_markup(g_messages.conversation_header,
@@ -877,7 +1100,7 @@ namespace tether::ui {
             // the daemon serves it from memory either way.
             if (g_messages.selected_thread != g_messages.compose_requested_key) {
                 g_messages.compose_requested_key = g_messages.selected_thread;
-                clear_list_box(g_messages.conversation);
+                clear_conversation();
                 g_messages.rendered.clear();
                 g_messages.rendered_last_stamp = 0;
                 g_messages.rendered_last_outgoing = false;
@@ -903,7 +1126,7 @@ namespace tether::ui {
             g_messages.compose_requested_key.clear();
             contact_completion_request();
 
-            clear_list_box(g_messages.conversation);
+            clear_conversation();
             g_messages.rendered.clear();
             g_messages.rendered_last_stamp = 0;
             g_messages.rendered_last_outgoing = false;
@@ -955,7 +1178,11 @@ namespace tether::ui {
     } // namespace
 
     void messages_view_handle_disconnect() {
+        auto* pending = g_messages.pending_sends.for_result(g_messages.active_thread, g_messages.active_operation_id);
+        if (pending && g_messages.sending)
+            pending->failure = _("No answer from the phone.");
         clear_sending();
+        restore_pending_row();
         g_messages.map_open = false;
         // The next session re-lists messages under fresh object paths, so nothing
         // is owed from the one that just ended.
@@ -1037,6 +1264,18 @@ namespace tether::ui {
             on_send_result(event);
             return true;
         }
+        if (command == "bt_search_result") {
+            if (fold(event.value("query", "")) != g_messages.search_needle)
+                return true; // stale: the box has moved on
+            g_messages.search_hits.clear();
+            if (event.contains("threads") && event["threads"].is_array()) {
+                for (const auto& key : event["threads"])
+                    if (key.is_string())
+                        g_messages.search_hits.insert(key.get<std::string>());
+            }
+            gtk_list_box_invalidate_filter(GTK_LIST_BOX(g_messages.thread_list));
+            return true;
+        }
         if (command == "bt_message_read") {
             if (g_messages.visible)
                 request_threads();
@@ -1044,6 +1283,7 @@ namespace tether::ui {
         }
         if (command == "bt_solicit_result") {
             set_status_main(event.value("message", ""));
+            show_toast(event.value("message", ""));
             return true;
         }
         return false;

@@ -1,5 +1,7 @@
 #include "contacts_view.hpp"
+#include "calls_view.hpp"
 #include "daemon_client.hpp"
+#include "toast.hpp"
 #include "ui_util.hpp"
 #include <tether/i18n.hpp>
 
@@ -18,6 +20,7 @@ namespace tether::ui {
             std::string search_needle;
             std::string shown;
             bool visible = false;
+            bool calls_enabled = false;
             void (*open_thread)(const std::string&) = nullptr;
         };
 
@@ -115,6 +118,23 @@ namespace tether::ui {
                                                        g_contacts.open_thread(stashed(GTK_WIDGET(button)));
                                                }));
             gtk_box_pack_end(GTK_BOX(box), message, FALSE, FALSE, 0);
+
+            // Only a phone number can be called, and only while call control is on.
+            if (is_tel) {
+                GtkWidget* call = action_button("call-start-symbolic",
+                                                display_address(key),
+                                                g_contacts.calls_enabled
+                                                    ? _("Call")
+                                                    : _("Call (turn on call control under Settings > Experimental)"),
+                                                // TRANSLATORS: Spoken name of the call button beside a phone number.
+                                                tether::tr_format(_("Call {}"), display_address(key)),
+                                                G_CALLBACK(+[](GtkButton* button, gpointer) {
+                                                    calls_view_dial(stashed(GTK_WIDGET(button)));
+                                                }));
+                gtk_widget_set_sensitive(call, g_contacts.calls_enabled);
+                g_object_set_data(G_OBJECT(call), "call-button", GINT_TO_POINTER(1));
+                gtk_box_pack_end(GTK_BOX(box), call, FALSE, FALSE, 0);
+            }
             return box;
         }
 
@@ -204,6 +224,16 @@ namespace tether::ui {
         }
 
     } // namespace
+
+    void contacts_view_set_calls_enabled(bool enabled) {
+        if (enabled == g_contacts.calls_enabled)
+            return;
+        g_contacts.calls_enabled = enabled;
+        // Rows already built are redone on the next refresh; force one.
+        g_contacts.shown.clear();
+        if (g_contacts.visible)
+            request_contacts();
+    }
 
     void contacts_view_set_visible(bool visible) {
         g_contacts.visible = visible;

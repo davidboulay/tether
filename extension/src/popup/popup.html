@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="color-scheme" content="light dark">
+  <title>Tether</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main class="popup">
+    <header class="head">
+      <img class="logo" src="../../icons/icon48.png" width="20" height="20" alt="">
+      <h1>Tether</h1>
+      <button id="settings" class="icon-btn" type="button" title="Settings" aria-label="Open settings">
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+          <path fill="currentColor" d="M8 4.75a3.25 3.25 0 1 0 0 6.5 3.25 3.25 0 0 0 0-6.5ZM6.25 8a1.75 1.75 0 1 1 3.5 0 1.75 1.75 0 0 1-3.5 0Z"/>
+          <path fill="currentColor" d="M7.1 0h1.8a1 1 0 0 1 .98.8l.26 1.3c.4.16.78.37 1.13.62l1.26-.43a1 1 0 0 1 1.19.45l.9 1.56a1 1 0 0 1-.21 1.25l-1 .88a5.9 5.9 0 0 1 0 1.3l1 .88a1 1 0 0 1 .21 1.25l-.9 1.56a1 1 0 0 1-1.19.45l-1.26-.43c-.35.25-.73.46-1.13.62l-.26 1.3a1 1 0 0 1-.98.8H7.1a1 1 0 0 1-.98-.8l-.26-1.3a5.9 5.9 0 0 1-1.13-.62l-1.26.43a1 1 0 0 1-1.19-.45l-.9-1.56a1 1 0 0 1 .21-1.25l1-.88a5.9 5.9 0 0 1 0-1.3l-1-.88a1 1 0 0 1-.21-1.25l.9-1.56a1 1 0 0 1 1.19-.45l1.26.43c.35-.25.73-.46 1.13-.62l.26-1.3A1 1 0 0 1 7.1 0Zm.82 1.5-.3 1.5a.75.75 0 0 1-.5.57 4.4 4.4 0 0 0-1.6.92.75.75 0 0 1-.74.15l-1.45-.5-.67 1.16 1.15 1.01a.75.75 0 0 1 .24.72 4.4 4.4 0 0 0 0 1.84.75.75 0 0 1-.24.72l-1.15 1.01.67 1.16 1.45-.5a.75.75 0 0 1 .74.15c.47.42 1.01.73 1.6.92a.75.75 0 0 1 .5.57l.3 1.5h1.34l.3-1.5a.75.75 0 0 1 .5-.57 4.4 4.4 0 0 0 1.6-.92.75.75 0 0 1 .74-.15l1.45.5.67-1.16-1.15-1.01a.75.75 0 0 1-.24-.72 4.4 4.4 0 0 0 0-1.84.75.75 0 0 1 .24-.72l1.15-1.01-.67-1.16-1.45.5a.75.75 0 0 1-.74-.15 4.4 4.4 0 0 0-1.6-.92.75.75 0 0 1-.5-.57l-.3-1.5Z"/>
+        </svg>
+      </button>
+    </header>
+
+    <section class="status" aria-labelledby="status-label">
+      <span id="status-dot" class="dot unknown" aria-hidden="true"></span>
+      <div class="status-text">
+        <p id="status-label" class="status-line" role="status" aria-live="polite">Connecting to Tether…</p>
+        <p id="status-detail" class="muted"></p>
+      </div>
+    </section>
+    <div id="status-actions" class="row" hidden>
+      <button id="retry" class="btn" type="button">Retry connection</button>
+    </div>
+
+    <section class="code" aria-labelledby="code-heading">
+      <h2 id="code-heading" class="label">Last code</h2>
+      <div id="code-empty" class="muted">No code received yet. Codes that arrive on your iPhone show up here.</div>
+      <div id="code-box" hidden>
+        <div class="code-row">
+          <output id="code-value" class="code-value" aria-label="Last code, hidden">•••</output>
+          <button id="show" class="btn small" type="button" aria-pressed="false">Show</button>
+          <button id="copy" class="btn small" type="button">Copy</button>
+        </div>
+        <p id="code-meta" class="muted"></p>
+      </div>
+    </section>
+
+    <div class="row">
+      <button id="fill" class="btn primary" type="button" disabled>Fill on this page</button>
+    </div>
+    <p id="feedback" class="feedback" role="status" aria-live="polite"></p>
+  </main>
+  <script src="popup.js"></script>
+</body>
+</html>

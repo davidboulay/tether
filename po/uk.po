@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-10-02 19:39-0700\n"
+"POT-Creation-Date: 2026-10-04 13:09+0200\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Ukrainian\n"
@@ -26,6 +26,34 @@ msgstr "так"
 #: src/cli/main.cpp
 msgid "no"
 msgstr "ні"
+
+#: src/cli/main.cpp
+msgid "Could not reach the daemon."
+msgstr "Не вдалося зв'язатися з демоном."
+
+#: src/cli/main.cpp
+msgid "The daemon did not answer in time."
+msgstr "Демон не відповів вчасно."
+
+#: src/cli/main.cpp
+msgid "The daemon closed the connection before answering."
+msgstr "Демон закрив з'єднання, не відповівши."
+
+#: src/cli/main.cpp
+msgid "The daemon does not know this command; it may be an older tetherd."
+msgstr "Демон не знає цієї команди; можливо, це старіший tetherd."
+
+#: src/cli/main.cpp
+msgid "The daemon sent an unreadable reply."
+msgstr "Демон надіслав нечитабельну відповідь."
+
+#: src/cli/main.cpp
+msgid "The daemon did not confirm the change; it may be an older tetherd.\n"
+msgstr "Демон не підтвердив зміну; можливо, це старіший tetherd.\n"
+
+#: src/cli/main.cpp
+msgid "The daemon did not apply the change.\n"
+msgstr "Демон не застосував зміну.\n"
 
 #: src/cli/main.cpp
 msgid "Show this help message."
@@ -271,12 +299,45 @@ msgid "Accept a pending pairing request locally."
 msgstr "Прийняти локально запит на створення пари, що очікує."
 
 #: src/cli/main.cpp
+msgid "Turn down a pending pairing request, and tell the other device so."
+msgstr ""
+"Відхилити запит на створення пари, що очікує, і повідомити про це інший "
+"пристрій."
+
+#: src/cli/main.cpp
 msgid "Remove a Wi-Fi pairing and drop its session."
 msgstr "Вилучити пару Wi-Fi та закрити її сеанс."
 
 #: src/cli/main.cpp
 msgid "Send a pair_request over TCP to the daemon."
 msgstr "Надіслати pair_request демону через TCP."
+
+#: src/cli/main.cpp
+msgid ""
+"Pause or resume sending this computer's clipboard to the iPhone, or show "
+"which it is."
+msgstr ""
+"Призупинити або відновити надсилання буфера обміну цього комп'ютера на "
+"iPhone, або показати поточний стан."
+
+#: src/cli/main.cpp
+msgid ""
+"Stop showing desktop popups from one iPhone app, named by its bundle id, or "
+"list the muted apps."
+msgstr ""
+"Більше не показувати спливні сповіщення від однієї програми iPhone, заданої "
+"її bundle id, або показати список приглушених програм."
+
+#: src/cli/main.cpp
+msgid "Show desktop popups from a muted iPhone app again."
+msgstr "Знову показувати спливні сповіщення від приглушеної програми iPhone."
+
+#: src/cli/main.cpp
+msgid ""
+"Print the daemon's reply as JSON instead of text, on the commands that read "
+"state."
+msgstr ""
+"Виводити відповідь демона як JSON замість тексту для команд, що читають стан."
 
 #: src/cli/main.cpp
 msgid "tether - Wayland companion CLI"
@@ -297,6 +358,10 @@ msgstr "Будь-який прапорець --bt-<name> як підкоманд
 #: src/cli/main.cpp
 msgid "Examples:"
 msgstr "Приклади:"
+
+#: src/cli/main.cpp
+msgid "Shell completion: tether --print-completions <bash|zsh|fish>"
+msgstr "Доповнення для оболонки: tether --print-completions <bash|zsh|fish>"
 
 #: src/cli/main.cpp
 #, c-format
@@ -379,10 +444,10 @@ msgstr[2] ""
 #, c-format
 msgid ""
 "\n"
-"Re-run 'tether --bt-setup' afterwards to confirm.\n"
+"Re-run 'tether bt setup' afterwards to confirm.\n"
 msgstr ""
 "\n"
-"Потім запустіть 'tether --bt-setup' ще раз для підтвердження.\n"
+"Потім запустіть 'tether bt setup' ще раз для підтвердження.\n"
 
 #: src/cli/main.cpp
 msgid "Mode"
@@ -431,8 +496,8 @@ msgid "mirroring on"
 msgstr "дублювання увімкнено"
 
 #: src/cli/main.cpp
-msgid "mirroring off (tether --bt-ancs on)"
-msgstr "дублювання вимкнено (tether --bt-ancs on)"
+msgid "mirroring off (tether bt ancs on)"
+msgstr "дублювання вимкнено (tether bt ancs on)"
 
 #: src/cli/main.cpp src/daemon/main.cpp src/gtk/main.cpp
 #: src/gtk/tether-gtk.desktop.in
@@ -444,8 +509,8 @@ msgid "connecting"
 msgstr "з'єднання"
 
 #: src/cli/main.cpp
-msgid "off (--bt-enable on)"
-msgstr "вимкнено (--bt-enable on)"
+msgid "off (tether bt enable on)"
+msgstr "вимкнено (tether bt enable on)"
 
 #: src/cli/main.cpp
 msgid "History"
@@ -454,10 +519,10 @@ msgstr "Історія"
 #: src/cli/main.cpp
 msgid ""
 "paused - the desktop keyring has no key to offer yet.\n"
-"Unlock it, or run 'tether --bt-retention plaintext'."
+"Unlock it, or run 'tether bt retention plaintext'."
 msgstr ""
-"призупинено — у сховищі ключів ще немає ключа.\n"
-"Розблокуйте його або виконайте «tether --bt-retention plaintext»."
+"призупинено — у сховищі ключів стільниці ще немає ключа.\n"
+"Розблокуйте його або виконайте «tether bt retention plaintext»."
 
 #: src/cli/main.cpp
 msgid "in use"
@@ -472,19 +537,19 @@ msgstr "Адаптера {} немає; використовується пер�
 #, c-format
 msgid ""
 "\n"
-"%zu setup step remaining. Run: tether --bt-setup\n"
+"%zu setup step remaining. Run: tether bt setup\n"
 msgid_plural ""
 "\n"
-"%zu setup steps remaining. Run: tether --bt-setup\n"
+"%zu setup steps remaining. Run: tether bt setup\n"
 msgstr[0] ""
 "\n"
-"Залишився %zu крок налаштування. Виконайте: tether --bt-setup\n"
+"Залишився %zu крок налаштування. Виконайте: tether bt setup\n"
 msgstr[1] ""
 "\n"
-"Залишилося %zu кроки налаштування. Виконайте: tether --bt-setup\n"
+"Залишилося %zu кроки налаштування. Виконайте: tether bt setup\n"
 msgstr[2] ""
 "\n"
-"Залишилося %zu кроків налаштування. Виконайте: tether --bt-setup\n"
+"Залишилося %zu кроків налаштування. Виконайте: tether bt setup\n"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth devices from the daemon.\n"
@@ -534,10 +599,6 @@ msgstr ""
 "main.conf."
 
 #: src/cli/main.cpp
-msgid "Could not reach the daemon.\n"
-msgstr "Не вдалося зв'язатися з демоном.\n"
-
-#: src/cli/main.cpp
 #, c-format
 msgid "Listening mode set to %s.\n"
 msgstr "Режим прослуховування встановлено на %s.\n"
@@ -551,9 +612,9 @@ msgid "Use never, one-removed or both-removed.\n"
 msgstr "Використовуйте never, one-removed або both-removed.\n"
 
 #: src/cli/main.cpp
-#, c-format
-msgid "Pause on removal set to %s.\n"
-msgstr "Паузу при вийманні встановлено на %s.\n"
+#, c++-format
+msgid "Pause on removal set to {}."
+msgstr "Паузу при вийманні встановлено на {}."
 
 #: src/cli/main.cpp
 msgid "Use on or off.\n"
@@ -584,6 +645,10 @@ msgstr "Сеанс буде заблоковано, коли iPhone вийде �
 #: src/cli/main.cpp
 msgid "Locking on the iPhone going out of range is off."
 msgstr "Блокування, коли iPhone виходить із зони дії, вимкнено."
+
+#: src/cli/main.cpp
+msgid "Could not reach the daemon.\n"
+msgstr "Не вдалося зв'язатися з демоном.\n"
 
 #: src/cli/main.cpp
 msgid "Daemon closed the connection before the operation finished.\n"
@@ -668,8 +733,8 @@ msgstr "Не вдалося отримати виклики від служби.
 
 #: src/cli/main.cpp
 #, c-format
-msgid "No calls. Check 'tether --bt-connection'.\n"
-msgstr "Викликів немає. Перевірте 'tether --bt-connection'.\n"
+msgid "No calls. Check 'tether bt connection'.\n"
+msgstr "Викликів немає. Перевірте 'tether bt connection'.\n"
 
 #: src/cli/main.cpp
 msgid "withheld"
@@ -681,8 +746,8 @@ msgstr "Не вдалося прочитати сповіщення у демо�
 
 #: src/cli/main.cpp
 #, c-format
-msgid "No notifications yet. Check 'tether --bt-connection'.\n"
-msgstr "Сповіщень поки немає. Перевірте 'tether --bt-connection'.\n"
+msgid "No notifications yet. Check 'tether bt connection'.\n"
+msgstr "Сповіщень поки немає. Перевірте 'tether bt connection'.\n"
 
 #: src/cli/main.cpp
 msgid "Could not read conversations from the daemon.\n"
@@ -690,8 +755,8 @@ msgstr "Не вдалося прочитати розмови у демона.\n
 
 #: src/cli/main.cpp
 #, c-format
-msgid "No conversations yet. Check 'tether --bt-connection'.\n"
-msgstr "Розмов поки немає. Перевірте 'tether --bt-connection'.\n"
+msgid "No conversations yet. Check 'tether bt connection'.\n"
+msgstr "Розмов поки немає. Перевірте 'tether bt connection'.\n"
 
 #: src/cli/main.cpp
 #, c++-format
@@ -701,16 +766,10 @@ msgstr[0] "({} непрочитане)"
 msgstr[1] "({} непрочитані)"
 msgstr[2] "({} непрочитаних)"
 
-#: src/cli/main.cpp src/gtk/devices_view.cpp
+#: src/cli/main.cpp
 #, c++-format
-msgid ""
-"The running tetherd is {}, but this is tether {}. Stop it and it\n"
-"restarts on demand:\n"
-"    pkill tetherd\n"
-msgstr ""
-"Запущено tetherd {}, але це tether {}. Зупиніть його — він запуститься знову "
-"за потреби:\n"
-"    pkill tetherd\n"
+msgid "The running tetherd is {}, but this is tether {}. {}\n"
+msgstr "Запущено tetherd {}, але це tether {}. {}\n"
 
 #: src/cli/main.cpp src/gtk/devices_view.cpp
 msgid "an older build"
@@ -722,8 +781,8 @@ msgstr "Не вдалося прочитати контакти у демона.
 
 #: src/cli/main.cpp
 #, c-format
-msgid "No contacts yet. Check 'tether --bt-connection'.\n"
-msgstr "Контактів поки немає. Перевірте 'tether --bt-connection'.\n"
+msgid "No contacts yet. Check 'tether bt connection'.\n"
+msgstr "Контактів поки немає. Перевірте 'tether bt connection'.\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -776,7 +835,7 @@ msgstr "Демон"
 msgid "running"
 msgstr "працює"
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gtk/settings_view.cpp
 msgid "Clipboard"
 msgstr "Буфер обміну"
 
@@ -832,10 +891,10 @@ msgstr "Нещодавно отримано:"
 #, c-format
 msgid ""
 "\n"
-"Run 'tether --pending' to see what is waiting to be accepted.\n"
+"Run 'tether pending' to see what is waiting to be accepted.\n"
 msgstr ""
 "\n"
-"Виконайте 'tether --pending', щоб побачити, що очікує на прийняття.\n"
+"Виконайте 'tether pending', щоб побачити, що очікує на прийняття.\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -846,10 +905,12 @@ msgstr "Немає запитів на спарення в очікуванні.
 #, c-format
 msgid ""
 "\n"
-"Accept one with: tether --accept <fingerprint>\n"
+"Accept one with: tether accept <fingerprint>\n"
+"Turn one down with: tether reject <fingerprint>\n"
 msgstr ""
 "\n"
-"Прийняти можна так: tether --accept <fingerprint>\n"
+"Прийняти запит: tether accept <fingerprint>\n"
+"Відхилити запит: tether reject <fingerprint>\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -908,6 +969,14 @@ msgstr ""
 "Виконайте 'systemctl --user daemon-reload', щоб systemd забув про неї.\n"
 
 #: src/cli/main.cpp
+msgid "Run 'tether --help'."
+msgstr "Виконайте 'tether --help'."
+
+#: src/cli/main.cpp
+msgid "tether: 'bt' needs a name, e.g. tether bt setup"
+msgstr "tether: 'bt' потребує назви підкоманди, наприклад tether bt setup"
+
+#: src/cli/main.cpp
 msgid "--port expects a number.\n"
 msgstr "--port очікує число.\n"
 
@@ -915,13 +984,33 @@ msgstr "--port очікує число.\n"
 msgid "--timeout expects a number in milliseconds.\n"
 msgstr "--timeout очікує число в мілісекундах.\n"
 
+#. TRANSLATORS: {} is the argument as typed.
 #: src/cli/main.cpp
-msgid "Unknown action. Run tether --help for options\n"
-msgstr "Невідома дія. Запустіть tether --help, щоб побачити параметри\n"
+#, c++-format
+msgid "tether: unknown option '{}'"
+msgstr "tether: невідомий параметр '{}'"
 
 #: src/cli/main.cpp
-msgid "  No tetherd instances found.\n"
-msgstr "  Екземплярів tetherd не знайдено.\n"
+#, c++-format
+msgid "tether: unknown command '{}'"
+msgstr "tether: невідома команда '{}'"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "tether: unexpected argument '{}'"
+msgstr "tether: неочікуваний аргумент '{}'"
+
+#: src/cli/main.cpp
+msgid "tether: no command given"
+msgstr "tether: команду не вказано"
+
+#: src/cli/main.cpp
+msgid "Scanning for tetherd instances on the local network..."
+msgstr "Пошук екземплярів tetherd у локальній мережі..."
+
+#: src/cli/main.cpp
+msgid "  No tetherd instances found."
+msgstr "  Екземплярів tetherd не знайдено."
 
 #: src/cli/main.cpp
 msgid "[new]"
@@ -940,31 +1029,35 @@ msgstr[1] "Знайдено %zu пристрої за %.1fs\n"
 msgstr[2] "Знайдено %zu пристроїв за %.1fs\n"
 
 #: src/cli/main.cpp
-msgid ""
-"The daemon is not running, and could not be started. Check the log in "
-"$XDG_STATE_HOME/tether, or start it with 'systemctl --user start "
-"tetherd.service'.\n"
-msgstr ""
-"Демон не запущено, і запустити його не вдалося. Перевірте журнал у "
-"$XDG_STATE_HOME/tether або запустіть його командою 'systemctl --user start "
-"tetherd.service'.\n"
+#, c++-format
+msgid "No daemon answered at {}:{}."
+msgstr "На {}:{} не відповів жоден демон."
+
+#: src/cli/main.cpp
+msgid "tether: accept needs a fingerprint, see 'tether pending'"
+msgstr "tether: accept потребує відбитка, див. 'tether pending'"
 
 #: src/cli/main.cpp
 #, c++-format
-msgid "No daemon answered at {}:{}.\n"
-msgstr "На {}:{} не відповів жоден демон.\n"
+msgid "Paired {}."
+msgstr "Створено пару з {}."
 
 #: src/cli/main.cpp
-msgid ""
-"Explicit framework connection locally rejected! Did you target explicitly "
-"invalid TLS or is daemon broken?\n"
-msgstr ""
-"Явне з'єднання фреймворку локально відхилено! Ви вказали свідомо невірний "
-"TLS чи демон зламано?\n"
+msgid "tether: reject needs a fingerprint, see 'tether pending'"
+msgstr "tether: reject потребує відбитка, див. 'tether pending'"
 
 #: src/cli/main.cpp
-msgid "--forget expects a fingerprint.\n"
-msgstr "--forget очікує відбиток.\n"
+msgid "No pairing request from that fingerprint is waiting.\n"
+msgstr "Немає запиту на створення пари з таким відбитком в очікуванні.\n"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Rejected {}."
+msgstr "Відхилено {}."
+
+#: src/cli/main.cpp
+msgid "tether: forget needs a fingerprint, see 'tether devices'"
+msgstr "tether: forget потребує відбитка, див. 'tether devices'"
 
 #: src/cli/main.cpp
 msgid "No paired device with that fingerprint.\n"
@@ -972,12 +1065,72 @@ msgstr "Немає спареного пристрою з таким відби�
 
 #: src/cli/main.cpp
 #, c++-format
+msgid "Forgot {}."
+msgstr "Забуто {}."
+
+#: src/cli/main.cpp
+msgid "tether: send needs a file path"
+msgstr "tether: send потребує шляху до файла"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Sending {}..."
+msgstr "Надсилання {}..."
+
+#: src/cli/main.cpp
+#, c++-format
 msgid "Transfer Failed: {}"
 msgstr "Передавання не вдалося: {}"
 
 #: src/cli/main.cpp
-msgid "A number is required, e.g. --bt-call +15551234567\n"
-msgstr "Потрібен номер, наприклад --bt-call +15551234567\n"
+msgid "File transfer delivered."
+msgstr "Файл доставлено."
+
+#: src/cli/main.cpp
+msgid "Clipboard sync is on: what you copy here goes to the iPhone."
+msgstr ""
+"Синхронізацію буфера обміну увімкнено: скопійоване тут потрапляє на iPhone."
+
+#: src/cli/main.cpp
+msgid "Clipboard sync is paused: nothing copied here leaves this computer."
+msgstr ""
+"Синхронізацію буфера обміну призупинено: скопійоване тут не залишає цього "
+"комп'ютера."
+
+#: src/cli/main.cpp
+msgid "tether: clipboard takes on, off or status"
+msgstr "tether: clipboard приймає on, off або status"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Clipboard sync: {}"
+msgstr "Синхронізація буфера обміну: {}"
+
+#: src/cli/main.cpp
+msgid "on"
+msgstr "увімкнено"
+
+#: src/cli/main.cpp
+msgid "off"
+msgstr "вимкнено"
+
+#: src/cli/main.cpp
+msgid "No iPhone app is muted."
+msgstr "Жодну програму iPhone не приглушено."
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Desktop popups from {} are muted."
+msgstr "Спливні сповіщення від {} приглушено."
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Desktop popups from {} are back."
+msgstr "Спливні сповіщення від {} знову показуються."
+
+#: src/cli/main.cpp
+msgid "A number is required, e.g. tether bt call +15551234567"
+msgstr "Потрібен номер, наприклад tether bt call +15551234567"
 
 #: src/cli/main.cpp
 msgid "Dialing."
@@ -1000,8 +1153,8 @@ msgid "Hanging up."
 msgstr "Завершення виклику."
 
 #: src/cli/main.cpp
-msgid "Expected on or off, e.g. --bt-calls-enable on\n"
-msgstr "Очікувалося on або off, наприклад --bt-calls-enable on\n"
+msgid "Expected on or off, e.g. tether bt calls-enable on"
+msgstr "Очікувалося on або off, наприклад tether bt calls-enable on"
 
 #: src/cli/main.cpp
 msgid "Call control enabled."
@@ -1012,44 +1165,42 @@ msgid "Call control disabled."
 msgstr "Керування викликами вимкнено."
 
 #: src/cli/main.cpp
-msgid "A thread key is required, e.g. --bt-messages tel:+15551234567\n"
-msgstr "Потрібен ключ розмови, наприклад --bt-messages tel:+15551234567\n"
+msgid "A thread key is required, e.g. tether bt messages tel:+15551234567"
+msgstr "Потрібен ключ розмови, наприклад tether bt messages tel:+15551234567"
 
 #: src/cli/main.cpp
 msgid ""
-"A conversation and a message are required, e.g. --bt-send tel:+15551234567 "
-"\"hi\"\n"
+"A conversation and a message are required, e.g. tether bt send tel:"
+"+15551234567 \"hi\""
 msgstr ""
-"Потрібні розмова та повідомлення, наприклад --bt-send tel:+15551234567 "
-"\"привіт\"\n"
+"Потрібні розмова та повідомлення, наприклад tether bt send tel:+15551234567 "
+"\"привіт\""
 
 #: src/cli/main.cpp
-msgid "A Bluetooth address is required, e.g. --bt-pair AA:BB:CC:DD:EE:FF\n"
-msgstr "Потрібна адреса Bluetooth, наприклад --bt-pair AA:BB:CC:DD:EE:FF\n"
+msgid "A Bluetooth address is required, e.g. tether bt pair AA:BB:CC:DD:EE:FF"
+msgstr "Потрібна адреса Bluetooth, наприклад tether bt pair AA:BB:CC:DD:EE:FF"
 
 #: src/cli/main.cpp
-msgid "Expected on or off, e.g. --bt-enable off\n"
-msgstr "Очікувалося on або off, наприклад --bt-enable off\n"
+msgid "Expected on or off, e.g. tether bt enable off"
+msgstr "Очікувалося on або off, наприклад tether bt enable off"
 
 #: src/cli/main.cpp
-#, c-format
-msgid "Bluetooth enabled.\n"
-msgstr "Bluetooth увімкнено.\n"
+msgid "Bluetooth enabled."
+msgstr "Bluetooth увімкнено."
 
 #: src/cli/main.cpp
-#, c-format
 msgid ""
 "Bluetooth disabled. Tether will not reconnect the iPhone. A link that is\n"
-"already up stays up until you disconnect it or the phone goes out of range.\n"
+"already up stays up until you disconnect it or the phone goes out of range."
 msgstr ""
 "Bluetooth вимкнено. Tether не під'єднуватиме iPhone знову. Уже встановлене\n"
 "з'єднання лишиться, доки ви його не розірвете або телефон не вийде із зони "
-"дії.\n"
+"дії."
 
 #: src/cli/main.cpp
 #, c++-format
-msgid "Expected on or off, e.g. {} on\n"
-msgstr "Очікувалося on або off, наприклад {} on\n"
+msgid "Expected on or off, e.g. tether bt {} on"
+msgstr "Очікувалося on або off, наприклад tether bt {} on"
 
 #: src/cli/main.cpp
 msgid "Notification contents enabled."
@@ -1068,25 +1219,27 @@ msgid "Notification mirroring disabled."
 msgstr "Дублювання сповіщень вимкнено."
 
 #: src/cli/main.cpp
-msgid "Expected encrypted, plaintext or none, e.g. --bt-retention encrypted\n"
+msgid ""
+"Expected encrypted, plaintext or none, e.g. tether bt retention encrypted"
 msgstr ""
-"Очікувалося encrypted, plaintext або none, наприклад --bt-retention "
-"encrypted\n"
+"Очікувалося encrypted, plaintext або none, наприклад tether bt retention "
+"encrypted"
 
 #: src/cli/main.cpp
-#, c-format
-msgid "Deleting stored messages and contacts.\n"
-msgstr "Вилучення збережених повідомлень і контактів.\n"
+msgid "Deleting stored messages and contacts."
+msgstr "Вилучення збережених повідомлень і контактів."
 
 #: src/cli/main.cpp
-#, c-format
-msgid "Retention set to %s.\n"
-msgstr "Зберігання встановлено на %s.\n"
+#, c++-format
+msgid "Retention set to {}."
+msgstr "Зберігання встановлено на {}."
 
 #: src/cli/main.cpp
-msgid "Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"
+msgid ""
+"Expected a controller, e.g. tether bt adapter hci1, or tether bt adapter auto"
 msgstr ""
-"Очікувався адаптер, наприклад --bt-adapter hci1, або --bt-adapter auto\n"
+"Очікувався контролер, наприклад tether bt adapter hci1, або tether bt "
+"adapter auto"
 
 #: src/cli/main.cpp
 #, c++-format
@@ -1094,9 +1247,8 @@ msgid "No Bluetooth controller matches '{}'. Available:\n"
 msgstr "Жоден адаптер Bluetooth не відповідає «{}». Доступні:\n"
 
 #: src/cli/main.cpp
-#, c-format
-msgid "Controller selection is automatic: the first powered one.\n"
-msgstr "Вибір адаптера автоматичний: перший увімкнений.\n"
+msgid "Controller selection is automatic: the first powered one."
+msgstr "Вибір контролера автоматичний: перший увімкнений."
 
 #: src/cli/main.cpp
 #, c++-format
@@ -1421,6 +1573,7 @@ msgid "Confirm"
 msgstr "Підтвердити"
 
 #: src/core/src/bluetooth/pairing.cpp src/gtk/messages_view.cpp
+#: src/gtk/settings_view.cpp
 msgid "Cancel"
 msgstr "Скасувати"
 
@@ -1476,7 +1629,8 @@ msgstr "Створення пари не завершено. Підтвердь�
 msgid "Pairing failed: {}"
 msgstr "Не вдалося створити пару: {}"
 
-#: src/core/src/bluetooth/pairing.cpp
+#. TRANSLATORS: {} is a device name.
+#: src/core/src/bluetooth/pairing.cpp src/gtk/devices_view.cpp
 #, c++-format
 msgid "Paired with {}."
 msgstr "Створено пару з {}."
@@ -1710,7 +1864,8 @@ msgstr "Не вдалося надіслати: {}"
 msgid "unknown error"
 msgstr "невідома помилка"
 
-#: src/core/src/net.cpp src/gtk/devices_view.cpp src/gtk/messages_view.cpp
+#: src/core/src/net.cpp src/gtk/calls_view.cpp src/gtk/devices_view.cpp
+#: src/gtk/messages_view.cpp
 msgid "Could not reach the Tether daemon."
 msgstr "Не вдалося зв'язатися з демоном Tether."
 
@@ -1724,13 +1879,80 @@ msgstr "{0} ({1}) хоче створити пару з цим пристроє�
 msgid "Pairing Request"
 msgstr "Запит на створення пари"
 
-#: src/core/src/net.cpp
+#: src/core/src/net.cpp src/daemon/main.cpp src/gtk/devices_view.cpp
 msgid "Accept"
 msgstr "Прийняти"
 
-#: src/core/src/net.cpp
+#: src/core/src/net.cpp src/daemon/main.cpp src/gtk/devices_view.cpp
 msgid "Reject"
 msgstr "Відхилити"
+
+#: src/daemon/main.cpp
+#, c++-format
+msgid "Details: {}"
+msgstr "Подробиці: {}"
+
+#: src/daemon/main.cpp
+msgid "Tether could not start"
+msgstr "Tether не вдалося запустити"
+
+#: src/daemon/main.cpp
+msgid ""
+"Its TLS identity could not be created or read. Check ~/.config/tether/"
+"cert.pem and key.pem, or move them away to make new ones."
+msgstr ""
+"Не вдалося створити або прочитати його TLS-ідентичність. Перевірте ~/.config/"
+"tether/cert.pem і key.pem або перемістіть їх, щоб створити нові."
+
+#: src/daemon/main.cpp
+msgid ""
+"Its command socket could not be created under $XDG_RUNTIME_DIR. Is another "
+"tetherd running, or the runtime directory missing?"
+msgstr ""
+"Не вдалося створити його командний сокет у $XDG_RUNTIME_DIR. Можливо, вже "
+"запущено інший tetherd або немає каталогу виконання?"
+
+#: src/daemon/main.cpp
+msgid ""
+"Port 5134 is already in use, so the iPhone cannot connect. Another tetherd, "
+"or another program, holds it. Find it with: ss -ltnp 'sport = :5134'"
+msgstr ""
+"Порт 5134 уже зайнято, тому iPhone не може під'єднатися. Його утримує інший "
+"tetherd або інша програма. Знайдіть її командою: ss -ltnp 'sport = :5134'"
+
+#: src/daemon/main.cpp
+msgid "Clipboard sync is off"
+msgstr "Синхронізацію буфера обміну вимкнено"
+
+#: src/daemon/main.cpp
+msgid ""
+"This compositor does not offer the data-control protocol Tether needs, so "
+"the clipboard will not follow the iPhone. Files, messages and notifications "
+"still work."
+msgstr ""
+"Цей композитор не надає протоколу data-control, потрібного Tether, тож буфер "
+"обміну не синхронізуватиметься з iPhone. Файли, повідомлення та сповіщення "
+"працюють і далі."
+
+#: src/daemon/main.cpp
+msgid "Pairing request waiting"
+msgstr "Запит на створення пари очікує"
+
+#: src/daemon/main.cpp
+#, c++-format
+msgid ""
+"{} asked to pair with this computer and the prompt timed out. It stays "
+"pending for an hour; answer here or in the Devices tab."
+msgstr ""
+"{} попросив створити пару з цим комп'ютером, і час очікування запиту минув. "
+"Запит лишається чинним ще годину; відповідьте тут або на вкладці «Пристрої»."
+
+#: src/daemon/main.cpp
+#, c++-format
+msgid "{} asked to pair with this computer. Answer here or in the Devices tab."
+msgstr ""
+"{} попросив створити пару з цим комп'ютером. Відповідьте тут або на вкладці "
+"«Пристрої»."
 
 #: src/daemon/main.cpp
 msgid "This PC can't be discovered"
@@ -1743,6 +1965,19 @@ msgid ""
 msgstr ""
 "avahi-daemon не запущено, тому Tether не може оголосити себе в мережі. "
 "Запустіть його командою: sudo systemctl enable --now avahi-daemon"
+
+#: src/daemon/main.cpp
+msgid "Bluetooth is unavailable"
+msgstr "Bluetooth недоступний"
+
+#: src/daemon/main.cpp
+msgid ""
+"bluetoothd could not be reached, so messages, contacts and notifications "
+"from the iPhone are off until it is. Check: systemctl status bluetooth"
+msgstr ""
+"Не вдалося зв'язатися з bluetoothd, тому повідомлення, контакти та "
+"сповіщення з iPhone вимкнено, доки він не стане доступним. Перевірте: "
+"systemctl status bluetooth"
 
 #: src/daemon/notification.cpp
 msgid "File arrived"
@@ -1757,6 +1992,14 @@ msgid "Open Folder"
 msgstr "Відкрити теку"
 
 #: src/daemon/notification.cpp
+#, c++-format
+msgid "{} more notification"
+msgid_plural "{} more notifications"
+msgstr[0] "Ще {} сповіщення"
+msgstr[1] "Ще {} сповіщення"
+msgstr[2] "Ще {} сповіщень"
+
+#: src/daemon/notification.cpp
 msgid "Reply"
 msgstr "Відповісти"
 
@@ -1768,6 +2011,12 @@ msgstr "Скопіювати код"
 #, c++-format
 msgid "Open in {}"
 msgstr "Відкрити в {}"
+
+#. TRANSLATORS: {} is an iPhone app name. Silences its popups on this computer.
+#: src/daemon/notification.cpp
+#, c++-format
+msgid "Mute {}"
+msgstr "Приглушити {}"
 
 #: src/gtk/calls_view.cpp
 msgid "Incoming"
@@ -1833,21 +2082,29 @@ msgstr "Відхилити"
 msgid "Hang up"
 msgstr "Завершити"
 
+#. TRANSLATORS: {} is a phone number.
+#: src/gtk/calls_view.cpp
+#, c++-format
+msgid "Calling {}…"
+msgstr "Виклик {}…"
+
 #: src/gtk/calls_view.cpp
 msgid "No calls."
 msgstr "Викликів немає."
 
 #: src/gtk/calls_view.cpp
-msgid "Call control is off. Turn it on with 'tether --bt-calls-enable on'."
+msgid ""
+"Call control is off. Turn it on under Settings > Experimental > Call control "
+"over Bluetooth."
 msgstr ""
-"Керування викликами вимкнено. Увімкніть його командою 'tether --bt-calls-"
-"enable on'."
+"Керування викликами вимкнено. Увімкніть його в Налаштування > "
+"Експериментальні > Керування викликами через Bluetooth."
 
 #: src/gtk/calls_view.cpp
 msgid "Number to call"
 msgstr "Номер для виклику"
 
-#: src/gtk/calls_view.cpp
+#: src/gtk/calls_view.cpp src/gtk/contacts_view.cpp
 msgid "Call"
 msgstr "Подзвонити"
 
@@ -1881,6 +2138,17 @@ msgid "Message {}"
 msgstr "Написати {}"
 
 #: src/gtk/contacts_view.cpp
+msgid "Call (turn on call control under Settings > Experimental)"
+msgstr ""
+"Подзвонити (увімкніть керування викликами в Налаштування > Експериментальні)"
+
+#. TRANSLATORS: Spoken name of the call button beside a phone number.
+#: src/gtk/contacts_view.cpp
+#, c++-format
+msgid "Call {}"
+msgstr "Подзвонити {}"
+
+#: src/gtk/contacts_view.cpp
 msgid "No contacts yet. Check the Bluetooth link on the Devices page."
 msgstr ""
 "Контактів поки немає. Перевірте зʼєднання Bluetooth на сторінці «Пристрої»."
@@ -1898,8 +2166,52 @@ msgid "The Tether daemon is not running."
 msgstr "Демон Tether не запущено."
 
 #: src/gtk/daemon_client.cpp
+msgid "The Tether daemon went away. Reconnecting…"
+msgstr "Демон Tether зник. Повторне з'єднання…"
+
+#: src/gtk/daemon_client.cpp
 msgid "Daemon Online"
 msgstr "Демон у мережі"
+
+#: src/gtk/devices_view.cpp
+msgid "Looking for the iPhone nearby…"
+msgstr "Пошук iPhone поблизу…"
+
+#: src/gtk/devices_view.cpp
+msgid "Looking for the iPhone again…"
+msgstr "Повторний пошук iPhone…"
+
+#. TRANSLATORS: {} is a device name.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "Connecting to {}…"
+msgstr "Під'єднання до {}…"
+
+#. TRANSLATORS: {} is a device name.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "Pairing with {}… Confirm on the iPhone when it asks."
+msgstr "Створення пари з {}… Підтвердьте на iPhone, коли він запитає."
+
+#. TRANSLATORS: {} is a six-digit code.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "Check that both devices show the code {}."
+msgstr "Перевірте, що обидва пристрої показують код {}."
+
+#: src/gtk/devices_view.cpp
+msgid "Waiting for the link to settle…"
+msgstr "Очікування стабілізації з'єднання…"
+
+#: src/gtk/devices_view.cpp
+msgid "The iPhone refused the connection. Trying once more…"
+msgstr "iPhone відхилив з'єднання. Ще одна спроба…"
+
+#. TRANSLATORS: {} is a device name.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "{} is already paired."
+msgstr "Пару з {} уже створено."
 
 #. TRANSLATORS: Left earbud, read aloud by screen readers before its battery level.
 #: src/gtk/devices_view.cpp
@@ -2012,6 +2324,11 @@ msgid "This machine cannot carry the Bluetooth features."
 msgstr "Ця машина не потягне функції Bluetooth."
 
 #: src/gtk/devices_view.cpp
+#, c++-format
+msgid "The running tetherd is {}, but this is tether {}. {}"
+msgstr "Запущено tetherd {}, але це tether {}. {}"
+
+#: src/gtk/devices_view.cpp
 msgid "Link"
 msgstr "З'єднання"
 
@@ -2036,6 +2353,10 @@ msgstr "Під'єднано і готово."
 msgid "Device is offline. Make sure it is switched on and on the same network."
 msgstr ""
 "Пристрій не в мережі. Переконайтеся, що він увімкнений і в тій самій мережі."
+
+#: src/gtk/devices_view.cpp
+msgid "This device asked to pair with this computer."
+msgstr "Цей пристрій попросив створити пару з цим комп'ютером."
 
 #: src/gtk/devices_view.cpp
 #, c++-format
@@ -2106,8 +2427,16 @@ msgid "({0} of {1})"
 msgstr "({0} з {1})"
 
 #: src/gtk/devices_view.cpp
+msgid "Could not reach the Tether daemon; nothing was sent."
+msgstr "Не вдалося зв'язатися з демоном Tether; нічого не надіслано."
+
+#: src/gtk/devices_view.cpp
 msgid "Daemon unavailable."
 msgstr "Демон недоступний."
+
+#: src/gtk/devices_view.cpp
+msgid "The Tether daemon is not running, so nothing was sent."
+msgstr "Демон Tether не запущено, тому нічого не надіслано."
 
 #: src/gtk/devices_view.cpp
 msgid "Send File"
@@ -2189,6 +2518,12 @@ msgstr "Спарено"
 msgid "Waiting for approval on {0}..."
 msgstr "Очікування підтвердження на {0}…"
 
+#. TRANSLATORS: {} is a device name.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "Rejected the pairing request from {}."
+msgstr "Запит на створення пари від {} відхилено."
+
 #: src/gtk/devices_view.cpp
 msgid ""
 "Could not reach that device. If a firewall is running, Tether needs inbound "
@@ -2213,9 +2548,25 @@ msgstr "Не вдалося під'єднатися до цього пристр
 msgid "Pair request was rejected."
 msgstr "Запит на створення пари відхилено."
 
+#. TRANSLATORS: {} is a device name.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "{} wants to pair. Accept or reject it above."
+msgstr "{} хоче створити пару. Прийміть або відхиліть запит вище."
+
 #: src/gtk/devices_view.cpp
 msgid "Ready"
 msgstr "Готово"
+
+#. TRANSLATORS: {0} is a file name, {1} a percentage.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "Sending {0}… {1}%"
+msgstr "Надсилання {0}… {1}%"
+
+#: src/gtk/devices_view.cpp
+msgid "Send failed."
+msgstr "Не вдалося надіслати."
 
 #: src/gtk/devices_view.cpp
 #, c++-format
@@ -2238,8 +2589,12 @@ msgid "Clipboard is empty."
 msgstr "Буфер обміну порожній."
 
 #: src/gtk/devices_view.cpp
-msgid "Desktop Clipboard Sync triggered."
-msgstr "Синхронізацію буфера обміну стільниці запущено."
+msgid "Clipboard sent to the iPhone."
+msgstr "Буфер обміну надіслано на iPhone."
+
+#: src/gtk/devices_view.cpp
+msgid "The clipboard is empty; nothing to send."
+msgstr "Буфер обміну порожній; немає чого надсилати."
 
 #: src/gtk/devices_view.cpp
 msgid "Messages and notifications are connected."
@@ -2263,6 +2618,10 @@ msgstr ""
 "iPhone показує цей код?\n"
 "\n"
 "%s"
+
+#: src/gtk/devices_view.cpp
+msgid "The AirPods did not connect."
+msgstr "AirPods не під'єдналися."
 
 #: src/gtk/devices_view.cpp
 msgid "Connect your iPhone"
@@ -2418,10 +2777,6 @@ msgid "Pair Device"
 msgstr "Створити пару з пристроєм"
 
 #: src/gtk/devices_view.cpp
-msgid "Force Trust (Accept Pending)"
-msgstr "Примусово довіряти (прийняти ті, що очікують)"
-
-#: src/gtk/devices_view.cpp
 msgid "Drop files here to send"
 msgstr "Перетягніть файли сюди, щоб надіслати"
 
@@ -2450,8 +2805,16 @@ msgid "Main menu"
 msgstr "Головне меню"
 
 #: src/gtk/main.cpp
+msgid "No system tray was found, so the window is shown instead."
+msgstr "Системного лотка не знайдено, тому натомість показано вікно."
+
+#: src/gtk/main.cpp
 msgid "Look for devices"
 msgstr "Шукати пристрої"
+
+#: src/gtk/main.cpp
+msgid "Scanning for devices…"
+msgstr "Пошук пристроїв…"
 
 #: src/gtk/main.cpp
 msgid "Devices"
@@ -2510,11 +2873,31 @@ msgstr[2] "{} непрочитаних повідомлень"
 msgid "Sent: {}"
 msgstr "Надіслано: {}"
 
-#. TRANSLATORS: Read aloud before a message you received, {} is the message.
+#. TRANSLATORS: Read aloud before a message you received, {0} is the sender, {1}
+#. the message.
+#: src/gtk/messages_view.cpp
+#, c++-format
+msgid "Received from {0}: {1}"
+msgstr "Отримано від {0}: {1}"
+
+#. TRANSLATORS: Read aloud before a message you received, {} is
+#. the message.
 #: src/gtk/messages_view.cpp
 #, c++-format
 msgid "Received: {}"
 msgstr "Отримано: {}"
+
+#: src/gtk/messages_view.cpp
+msgid "Sending…"
+msgstr "Надсилання…"
+
+#: src/gtk/messages_view.cpp
+msgid "Not sent."
+msgstr "Не надіслано."
+
+#: src/gtk/messages_view.cpp
+msgid "Retry"
+msgstr "Повторити"
 
 #: src/gtk/messages_view.cpp
 msgid "Bluetooth connection needed to sync messages."
@@ -2523,10 +2906,6 @@ msgstr "Для синхронізації повідомлень потрібн�
 #: src/gtk/messages_view.cpp
 msgid "Select a conversation"
 msgstr "Виберіть розмову"
-
-#: src/gtk/messages_view.cpp
-msgid "Sending…"
-msgstr "Надсилання…"
 
 #: src/gtk/messages_view.cpp
 msgid "Enter a recipient."
@@ -2544,6 +2923,10 @@ msgstr "Відповідь у цій розмові недоступна."
 msgid "No answer about that message; it may still have been sent."
 msgstr ""
 "Немає відповіді щодо цього повідомлення; можливо, його все ж надіслано."
+
+#: src/gtk/messages_view.cpp
+msgid "No answer from the phone."
+msgstr "Телефон не відповідає."
 
 #: src/gtk/messages_view.cpp
 msgid "Could not reach the Tether daemon; the message was not sent."
@@ -2573,10 +2956,6 @@ msgstr "Номер телефону або ел. пошта"
 msgid "Send"
 msgstr "Надіслати"
 
-#: src/gtk/messages_view.cpp
-msgid "Retry"
-msgstr "Повторити"
-
 #: src/gtk/notifications_view.cpp
 msgid "Dismiss on the iPhone"
 msgstr "Прибрати на iPhone"
@@ -2602,6 +2981,32 @@ msgstr "Сповіщень поки немає."
 #: src/gtk/notifications_view.cpp
 msgid "Notification mirroring is unavailable."
 msgstr "Дублювання сповіщень недоступне."
+
+#: src/gtk/settings_view.cpp
+msgid "The Tether daemon is not running, so this setting was not changed."
+msgstr "Демон Tether не запущено, тому це налаштування не змінено."
+
+#: src/gtk/settings_view.cpp
+msgid "Delete the stored message history?"
+msgstr "Вилучити збережену історію повідомлень?"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Messages and contacts already saved on this computer are deleted right away. "
+"The phone keeps its own copy, and conversations are re-read from it while "
+"connected."
+msgstr ""
+"Повідомлення та контакти, вже збережені на цьому комп'ютері, буде вилучено "
+"негайно. Телефон зберігає власну копію, і розмови знову зчитуються з нього "
+"під час з'єднання."
+
+#: src/gtk/settings_view.cpp
+msgid "Delete history"
+msgstr "Вилучити історію"
+
+#: src/gtk/settings_view.cpp
+msgid "Unmute"
+msgstr "Скасувати приглушення"
 
 #: src/gtk/settings_view.cpp
 msgid ""
@@ -2641,6 +3046,23 @@ msgid ""
 msgstr ""
 "Символьна переймає колір панелі. Набуде чинності під час наступного запуску "
 "Tether."
+
+#: src/gtk/settings_view.cpp
+msgid "Over Wi-Fi, what is copied here goes to the iPhone and back."
+msgstr "Через Wi-Fi скопійоване тут потрапляє на iPhone і назад."
+
+#: src/gtk/settings_view.cpp
+msgid "Sync the clipboard automatically"
+msgstr "Синхронізувати буфер обміну автоматично"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Off pauses it both ways; Send Clipboard on the Devices page still works. "
+"Copies a password manager marks as sensitive are never sent."
+msgstr ""
+"Вимкнення призупиняє синхронізацію в обидва боки; «Надіслати буфер обміну» "
+"на сторінці «Пристрої» працює й далі. Скопійоване, що менеджер паролів "
+"позначає як конфіденційне, ніколи не надсилається."
 
 #: src/gtk/settings_view.cpp
 msgid "iPhone notifications"
@@ -2686,11 +3108,28 @@ msgstr ""
 
 #: src/gtk/settings_view.cpp
 msgid "Show message previews"
-msgstr "Показувати текст повідомлень"
+msgstr "Показувати попередній перегляд повідомлень"
 
 #: src/gtk/settings_view.cpp
 msgid "Off shows only the sender."
 msgstr "Якщо вимкнено, показується лише відправник."
+
+#: src/gtk/settings_view.cpp
+msgid "Muted apps"
+msgstr "Приглушені програми"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"iPhone apps whose alerts show no popup here. They still appear on the "
+"Notifications tab. Mute one from its popup."
+msgstr ""
+"Програми iPhone, сповіщення яких не показуються тут спливними. Вони й далі "
+"з'являються на вкладці «Сповіщення». Приглушити програму можна з її "
+"спливного сповіщення."
+
+#: src/gtk/settings_view.cpp
+msgid "No apps are muted."
+msgstr "Жодну програму не приглушено."
 
 #: src/gtk/settings_view.cpp
 msgid "Security"
@@ -2763,6 +3202,26 @@ msgstr "Керування викликами через Bluetooth"
 msgid "Answer and place calls from the Calls tab."
 msgstr "Відповідайте на виклики та телефонуйте з вкладки «Виклики»."
 
+#: src/gtk/tray.cpp
+msgid "Hide Tether"
+msgstr "Сховати Tether"
+
+#: src/gtk/tray.cpp
+msgid "Show Tether"
+msgstr "Показати Tether"
+
+#: src/gtk/tray.cpp
+msgid "Sync clipboard with iPhone"
+msgstr "Синхронізувати буфер обміну з iPhone"
+
+#: src/gtk/tray.cpp
+msgid "Settings…"
+msgstr "Налаштування…"
+
+#: src/gtk/tray.cpp
+msgid "Quit Tether"
+msgstr "Вийти з Tether"
+
 #: src/gtk/tray.cpp src/gtk/ui_util.cpp
 msgid "connected"
 msgstr "під'єднано"
@@ -2782,6 +3241,18 @@ msgstr "{}: {}"
 msgid "Daemon: not running"
 msgstr "Демон: не запущено"
 
+#: src/gtk/tray.cpp
+#, c++-format
+msgid "{} pairing request waiting"
+msgid_plural "{} pairing requests waiting"
+msgstr[0] "{} запит на створення пари очікує"
+msgstr[1] "{} запити на створення пари очікують"
+msgstr[2] "{} запитів на створення пари очікують"
+
+#: src/gtk/tray.cpp
+msgid "Clipboard sync paused"
+msgstr "Синхронізацію буфера обміну призупинено"
+
 #: src/gtk/ui_util.cpp
 msgid "Waiting for the Tether daemon."
 msgstr "Очікування демона Tether."
@@ -2798,6 +3269,39 @@ msgstr "Створюйте пари пристроїв і синхронізуй
 msgid "iPhone;iOS;SMS;Messages;Clipboard;Files;Notifications;Calls;AirPods;"
 msgstr ""
 "iPhone;iOS;SMS;Повідомлення;Буфер обміну;Файли;Сповіщення;Дзвінки;AirPods;"
+
+#~ msgid "Unknown action. Run tether --help for options\n"
+#~ msgstr "Невідома дія. Запустіть tether --help, щоб побачити параметри\n"
+
+#~ msgid ""
+#~ "The daemon is not running, and could not be started. Check the log in "
+#~ "$XDG_STATE_HOME/tether, or start it with 'systemctl --user start "
+#~ "tetherd.service'.\n"
+#~ msgstr ""
+#~ "Демон не запущено, і запустити його не вдалося. Перевірте журнал у "
+#~ "$XDG_STATE_HOME/tether або запустіть його командою 'systemctl --user "
+#~ "start tetherd.service'.\n"
+
+#~ msgid ""
+#~ "Explicit framework connection locally rejected! Did you target explicitly "
+#~ "invalid TLS or is daemon broken?\n"
+#~ msgstr ""
+#~ "Явне з'єднання фреймворку локально відхилено! Ви вказали свідомо невірний "
+#~ "TLS чи демон зламано?\n"
+
+#~ msgid "--forget expects a fingerprint.\n"
+#~ msgstr "--forget очікує відбиток.\n"
+
+#~ msgid "Call control is off. Turn it on with 'tether --bt-calls-enable on'."
+#~ msgstr ""
+#~ "Керування викликами вимкнено. Увімкніть його командою 'tether --bt-calls-"
+#~ "enable on'."
+
+#~ msgid "Desktop Clipboard Sync triggered."
+#~ msgstr "Синхронізацію буфера обміну стільниці запущено."
+
+#~ msgid "Force Trust (Accept Pending)"
+#~ msgstr "Примусово довіряти (прийняти ті, що очікують)"
 
 #~ msgid ""
 #~ "Where messages and contacts are stored on this computer. Encrypted keeps "
@@ -2864,7 +3368,3 @@ msgstr ""
 #, fuzzy
 #~ msgid "Tether version"
 #~ msgstr "Показати версію tether."
-
-#, fuzzy
-#~ msgid "on"
-#~ msgstr "Зв'язок"

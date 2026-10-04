@@ -4,7 +4,9 @@
     "version": "1.0.6",
     "description": "Autofills OTPs on webpages using Tether daemon",
     "permissions": [
-        "nativeMessaging"
+        "nativeMessaging",
+        "storage",
+        "clipboardWrite"
     ],
     "host_permissions": [
         "<all_urls>"
@@ -25,6 +27,19 @@
         "scripts": [
             "src/background/background.js"
         ]
+    },
+    "action": {
+        "default_popup": "src/popup/popup.html",
+        "default_title": "Tether",
+        "default_icon": {
+            "16": "icons/icon16.png",
+            "48": "icons/icon48.png",
+            "128": "icons/icon128.png"
+        }
+    },
+    "options_ui": {
+        "page": "src/options/options.html",
+        "open_in_tab": false
     },
     "content_scripts": [
         {

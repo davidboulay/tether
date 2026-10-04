@@ -118,12 +118,18 @@ and compare the fingerprint before approving:
 ```sh
 docker compose exec tether tether pending
 docker compose exec tether tether accept <fingerprint>
+docker compose exec tether tether reject <fingerprint>   # drop a request you do not recognize
 docker compose exec tether tether status
 ```
 
 Without Wayland, no desktop approval window is launched. A missing/broken GUI
 helper is not a rejection: the request waits for explicit approval through the
-CLI. Neither the container nor its health probe accepts devices automatically.
+CLI for one hour, then expires. Neither the container nor its health probe
+accepts devices automatically.
+
+`tether clipboard status` reports clipboard sync off in the container. There is
+no Wayland session to sync, so `tether clipboard on` has nothing to turn on; the
+switch exists for desktop installs.
 
 ### Bluetooth messages
 

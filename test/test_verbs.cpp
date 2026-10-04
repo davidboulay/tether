@@ -53,3 +53,18 @@ TEST(Verbs, EveryVerbHasAFlagAndHelp) {
         EXPECT_NE(verb.usage[0], '\0') << verb.verb;
     }
 }
+
+TEST(Verbs, SkipsALeadingJsonSwitch) {
+    EXPECT_EQ(expand({"tether", "--json", "status"}), (std::vector<std::string>{"tether", "--json", "--status"}));
+    EXPECT_EQ(expand({"tether", "--json", "bt", "connection"}),
+              (std::vector<std::string>{"tether", "--json", "--bt-connection"}));
+    EXPECT_EQ(expand({"tether", "--json"}), (std::vector<std::string>{"tether", "--json"}));
+}
+
+TEST(Verbs, KnowsTheNewerVerbs) {
+    EXPECT_EQ(expand({"tether", "reject", "9a4f21"}), (std::vector<std::string>{"tether", "--reject", "9a4f21"}));
+    EXPECT_EQ(expand({"tether", "clipboard", "off"}), (std::vector<std::string>{"tether", "--clipboard-sync", "off"}));
+    EXPECT_EQ(expand({"tether", "mute", "list"}), (std::vector<std::string>{"tether", "--mute", "list"}));
+    EXPECT_EQ(expand({"tether", "unmute", "com.apple.MobileSMS"}),
+              (std::vector<std::string>{"tether", "--unmute", "com.apple.MobileSMS"}));
+}

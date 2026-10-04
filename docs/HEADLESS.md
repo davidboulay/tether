@@ -52,6 +52,11 @@ already, holding the port this unit wants. Enabling the unit takes it over.
 Once the unit is enabled, clients stop spawning their own and leave the daemon
 to systemd.
 
+That also decides how you restart it: `systemctl --user restart tetherd`, not
+`pkill tetherd`. The unit is `Restart=on-failure`, so a daemon killed by hand
+exits cleanly and stays down, and no client will start one while the unit is
+enabled. `journalctl --user -u tetherd -n 100` is its log.
+
 ## Without systemd
 
 On Artix, Void, Devuan, or Gentoo with OpenRC there is no user unit to enable,
@@ -82,8 +87,13 @@ so accept it from the shell instead:
 tether status            # is the daemon up, is mDNS advertising
 tether pending           # the requests waiting, with their fingerprints
 tether accept 9a4f21c8…
+tether reject 9a4f21c8…  # drop a request you do not recognize; the phone can ask again
 tether devices           # what is paired now
 ```
+
+A request stays pending for one hour, and `tether pending` lists it until it is
+accepted, rejected, or expired. Compare the fingerprint with the one on the
+iPhone before accepting.
 
 If the phone cannot find the machine, mDNS or the firewall is usually why:
 
@@ -135,11 +145,16 @@ rest of the daemon does not care. If the machine does run a compositor and this
 still says off, the compositor is missing `wlr-data-control` or
 `ext-data-control`.
 
+On a machine that does have a compositor, sync is continuous once a phone is
+connected over Wi-Fi. `tether clipboard off` pauses it in both directions,
+`tether clipboard on` resumes it, and `tether clipboard status` reports which it
+is. Copies a password manager marks as sensitive are never sent either way.
+
 ## From another machine
 
 The CLI talks to a remote daemon over the same TLS the phone uses:
 
 ```bash
-tether -g --host 10.0.0.5
+tether paste --host 10.0.0.5
 tether pair --host 10.0.0.5
 ```

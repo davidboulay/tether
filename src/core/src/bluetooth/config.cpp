@@ -71,6 +71,8 @@ namespace tether::bluetooth {
         j["lock_on_away"] = config.lock_on_away;
         j["lock_away_seconds"] = config.lock_away_seconds;
         j["lock_command"] = config.lock_command;
+        j["clipboard_sync_enabled"] = config.clipboard_sync_enabled;
+        j["muted_apps"] = config.muted_apps;
         return j.dump(2);
     }
 
@@ -99,6 +101,13 @@ namespace tether::bluetooth {
             // A zero or negative grace would lock on the first flap.
             config.lock_away_seconds = std::max(1, j.value("lock_away_seconds", AWAY_LOCK_GRACE_SECONDS));
             config.lock_command = j.value("lock_command", "");
+            config.clipboard_sync_enabled = j.value("clipboard_sync_enabled", true);
+            if (j.contains("muted_apps") && j["muted_apps"].is_array()) {
+                for (const auto& app : j["muted_apps"]) {
+                    if (app.is_string() && !app.get<std::string>().empty())
+                        config.muted_apps.push_back(app.get<std::string>());
+                }
+            }
         } catch (const std::exception&) {
             // A corrupt file must not stop the daemon; defaults are safe.
         }

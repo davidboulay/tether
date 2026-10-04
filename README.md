@@ -36,7 +36,13 @@
 | **AirPods** (opt-in) | 🧪 Alpha |
 
 ### Clipboard Sync
-Text copied on your Linux desktop appears instantly on your iPhone, and vice versa.
+Clipboard sync is automatic and continuous once a device is connected over Wi-Fi: every change to the Linux clipboard is sent to the iPhone, and everything copied on the iPhone lands on the Linux clipboard. Nothing has to be triggered by hand.
+
+Two things to know:
+- Copies that a password manager marks as sensitive (KeePassXC, Bitwarden, and anything else that sets the `x-kde-passwordManagerHint` MIME hint) are never sent to the phone.
+- It can be paused and resumed from the tray menu, from Settings, or with `tether clipboard off` and `tether clipboard on`; `tether clipboard status` reports which it is. Pausing stops both directions and nothing else.
+
+It needs a Wayland session with `wlr-data-control` or `ext-data-control`; see [docs/HEADLESS.md](docs/HEADLESS.md#clipboard-sync) for machines without one.
 
 ### File Transfer
 Drag and drop files from Linux directly into the iPhone app, or receive files automatically to your `$XDG_DOWNLOAD_DIR` (~/Downloads).
@@ -100,12 +106,12 @@ Download `tether-<version>-<arch>.AppImage` from the
 ```bash
 chmod +x tether-*.AppImage
 ./tether-*.AppImage                              # the GTK app
-./tether-*.AppImage --bt-setup                   # the CLI, same binary
+./tether-*.AppImage bt setup                     # the CLI, same binary
 ./tether-*.AppImage --install-extension-host     # if you use the browser or mail extension
 ```
 
 The iPhone Bluetooth features need one-time system setup the AppImage cannot do for you.
-`--bt-setup` prints the commands for this machine.
+`tether bt setup` (here `./tether-*.AppImage bt setup`) prints the commands for this machine.
 
 Requires glibc 2.38 and libstdc++ from GCC 13 (Fedora 39+, Ubuntu 23.10+, Debian 13+, Arch).
 
@@ -117,7 +123,7 @@ Download `tether-<version>-<arch>.flatpak` from the
 ```bash
 flatpak install ./tether-*.flatpak
 flatpak run com.tether.desktop                                          # the GTK app
-flatpak run --command=tether com.tether.desktop --bt-setup              # the CLI
+flatpak run --command=tether com.tether.desktop bt setup                # the CLI
 flatpak run --command=tether com.tether.desktop --install-extension-host
 ```
 
@@ -290,6 +296,25 @@ make install
    take a few minutes to appear; "Show iPhone Permissions" in the GTK app
    re-advertises so they show up again.
 
+### Pairing over Wi-Fi: what you will see
+
+When the iPhone asks to pair, the Linux side shows the request in a separate
+popup window, not inside the main app, with the fingerprint to compare and
+Accept and Reject buttons. The popup closes on its own after 60 seconds.
+
+Missing it is not a refusal. The request stays pending for one hour, and the
+Devices tab shows a banner for it with the same Accept and Reject buttons until
+you answer or it expires. From a terminal:
+
+```bash
+tether pending               # the requests waiting, with their fingerprints
+tether accept <fingerprint>
+tether reject <fingerprint>  # drop it without pairing; the iPhone can ask again
+```
+
+Compare the fingerprint with the one the iPhone shows before accepting. Both
+ends have to approve; once they do, each side writes the other's fingerprint to
+its `known_hosts.json` and later connections from that certificate need no prompt.
 
 ### No desktop on the machine?
 
@@ -323,6 +348,22 @@ This setup is useful for homelabs and headless Linux servers where a full GTK de
 4. **iPhone App**: Discovers the daemon via Bonjour/mDNS, utilizing Apple's `Network.framework` for secure TLS negotiation. Not required for SMS/iMessage and notification mirroring, which use Bluetooth.
 
 5. **Browser/Mail Extension**: WebExtension that interfaces with the daemon via native messaging. Use with Thunderbird/Betterbird and Firefox or Chromium-based browsers.
+
+### CLI
+
+`tether <verb>` is the spelling used throughout these docs. The verbs are
+`status`, `devices`, `pending`, `accept <fingerprint>`, `reject <fingerprint>`,
+`forget <fingerprint>`, `pair --host <ip>`, `discover`, `send <path>`, `copy [text]`,
+`paste`, `clipboard <on|off|status>`, `mute <bundle-id>|list`, `unmute <bundle-id>`,
+`service`, `version`, `help`, and `bt <name>` for everything Bluetooth
+(`tether bt setup`, `tether bt status`, `tether bt pair <addr>`, and so on).
+
+Each verb is a long flag underneath (`--status`, `--list-devices`, `--pending`,
+`--accept`, `--reject`, `--forget`, `--pair`, `--discover`, `--send-file`,
+`--set-clipboard`, `--get-clipboard`, `--clipboard-sync`, `--mute`, `--unmute`,
+`--install-service`, `--version`, `--help`, and `--bt-<name>`), and the flag
+spelling still works everywhere: `tether --bt-setup` is `tether bt setup`.
+`tether help` lists both forms.
 
 ## Requirements
 
@@ -387,9 +428,27 @@ On NixOS, set `programs.tether.wifi.openFirewall = true;` instead (see the [NixO
 sudo systemctl enable --now avahi-daemon
 ```
 
+### Restarting the daemon
+
+With the `tetherd` user unit enabled, which the distro packages and `tether service`
+set up, restart it through systemd and not with `pkill`:
+
+```bash
+systemctl --user restart tetherd
+journalctl --user -u tetherd -n 100     # its log
+```
+
+The unit is `Restart=on-failure`, so a daemon that was killed cleanly stays down,
+and while the unit is enabled the CLI and the GTK app do not spawn a daemon of
+their own. A `pkill tetherd` therefore leaves nothing listening until the next
+login. Without the unit, quitting the daemon is enough: the next client starts a
+new one.
+
 ### Bluetooth
 
-Messages and notifications need one-time system setup. See [docs/BLUETOOTH.md](docs/BLUETOOTH.md), or run:
+Messages and notifications need one-time system setup. Start with
+[docs/BLUETOOTH-QUICKSTART.md](docs/BLUETOOTH-QUICKSTART.md) (five steps, then a
+symptom-to-command table); the long form is [docs/BLUETOOTH.md](docs/BLUETOOTH.md). Or run:
 
 ```bash
 tether bt setup

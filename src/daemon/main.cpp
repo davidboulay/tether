@@ -7,6 +7,8 @@
 #include <nlohmann/json.hpp>
 #include <string_view>
 #include <sys/timerfd.h>
+#include <chrono>
+#include <thread>
 #include <tether/audio.hpp>
 #include <tether/bluetooth/airpods.hpp>
 #include <tether/bluetooth/config.hpp>
@@ -65,20 +67,63 @@ constexpr int SINK_QUIET_TIMEOUT_MS = 300;
 // After a rebuilt Bluetooth sink reappears, time for the audio server to move streams back onto it.
 constexpr int SINK_SETTLE_SECONDS = 1;
 
+// A startup failure used to go only to a log file nobody is told about. These
+// go to the desktop as well, and wait long enough for the server to show them.
+static void report_startup_failure(tether::DesktopNotifier& notifier,
+                                   bool notifier_ready,
+                                   const std::string& summary,
+                                   const std::string& body) {
+    debug::log(ERR, "{} {}", summary, body);
+    if (!notifier_ready)
+        return;
+    tether::NotificationSpec spec;
+    spec.app_name = "Tether";
+    spec.summary = summary;
+    spec.body = body;
+    spec.icons = {"dialog-error", "dialog-warning"};
+    spec.system = true;
+    spec.resident = true;
+    notifier.notify(spec);
+    // The popup is posted on another thread; give D-Bus a moment before exit.
+    std::this_thread::sleep_for(std::chrono::milliseconds(400));
+}
+
+static std::string log_path_hint() {
+    try {
+        return tether::tr_format(_("Details: {}"), tether::get_state_dir() + "/tetherd.log");
+    } catch (const std::exception&) {
+        return "";
+    }
+}
+
 int main(int argc, char** argv) {
     redirect_output_to_log();
     tether::init_locale();
     debug::log(INFO, "tetherd version {}", tether::get_version());
 
+    // Up first so that whatever fails below can say so on screen.
+    tether::DesktopNotifier notifier;
+    const bool notifier_ready = notifier.init();
+    if (!notifier_ready) {
+        debug::log(ERR, "Warning: desktop notifications unavailable");
+    }
+
     try {
         tether::ensure_single_instance();
     } catch (const std::exception& e) {
+        // Another tetherd holds the lock, which is the normal case for a client
+        // that raced the unit; not worth a popup.
         debug::log(ERR, "Initialization error: {}", e.what());
         return 1;
     }
 
     if (!tether::Crypto::instance().init()) {
-        debug::log(ERR, "Fatal: Failed to initialize OpenSSL mTLS engine.");
+        report_startup_failure(notifier,
+                               notifier_ready,
+                               _("Tether could not start"),
+                               _("Its TLS identity could not be created or read. Check ~/.config/tether/cert.pem "
+                                 "and key.pem, or move them away to make new ones.") +
+                                   std::string("\n") + log_path_hint());
         return 1;
     }
 
@@ -93,14 +138,28 @@ int main(int argc, char** argv) {
     tether::TcpServer tcp_srv(loop, 5134);
     tether::UnixServer unix_srv(loop, tcp_srv);
     if (!unix_srv.start()) {
-        debug::log(ERR, "Failed to start Unix server");
+        report_startup_failure(notifier,
+                               notifier_ready,
+                               _("Tether could not start"),
+                               _("Its command socket could not be created under $XDG_RUNTIME_DIR. Is another "
+                                 "tetherd running, or the runtime directory missing?") +
+                                   std::string("\n") + log_path_hint());
         return 1;
     }
 
     if (!tcp_srv.start()) {
-        debug::log(ERR, "Failed to start TCP server");
+        report_startup_failure(notifier,
+                               notifier_ready,
+                               _("Tether could not start"),
+                               _("Port 5134 is already in use, so the iPhone cannot connect. Another tetherd, "
+                                 "or another program, holds it. Find it with: ss -ltnp 'sport = :5134'") +
+                                   std::string("\n") + log_path_hint());
         return 1;
     }
+
+    auto bt_config = tether::bluetooth::load_config();
+    tether::set_clipboard_sync_enabled(bt_config.clipboard_sync_enabled);
+    tether::set_muted_apps(bt_config.muted_apps);
 
     // Advertise this daemon on the local network via mDNS
     tether::Discovery discovery;
@@ -156,6 +215,8 @@ int main(int argc, char** argv) {
     tether::g_wayland = &wayland_srv;
     if (wayland_srv.init()) {
         wayland_srv.set_clipboard_callback([](const std::string& text) {
+            if (!tether::clipboard_sync_enabled())
+                return;
             nlohmann::json j;
             j["command"] = "clipboard_updated";
             j["content"] = text;
@@ -163,22 +224,76 @@ int main(int argc, char** argv) {
             // app can still mislabel binary as text/plain. Don't abort the daemon.
             tether::broadcast_message(j.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace));
         });
-        wayland_srv.set_clipboard_image_callback(
-            [](const std::string& png) { tether::broadcast_clipboard_image(png); });
+        wayland_srv.set_clipboard_image_callback([](const std::string& png) {
+            if (!tether::clipboard_sync_enabled())
+                return;
+            tether::broadcast_clipboard_image(png);
+        });
+    } else if (const char* display = std::getenv("WAYLAND_DISPLAY"); display && *display && notifier_ready) {
+        // There is a Wayland session, so the user expects the clipboard to follow.
+        tether::NotificationSpec spec;
+        spec.app_name = "Tether";
+        spec.summary = _("Clipboard sync is off");
+        spec.body = _("This compositor does not offer the data-control protocol Tether needs, so the clipboard "
+                      "will not follow the iPhone. Files, messages and notifications still work.");
+        spec.icons = {"edit-paste", "dialog-warning"};
+        spec.system = true;
+        notifier.notify(spec);
     }
 
     tether::FileReceiveManager file_mgr;
-    tether::DesktopNotifier notifier;
-    const bool notifier_ready = notifier.init();
-    if (!notifier_ready) {
-        debug::log(ERR, "Warning: desktop notifications unavailable");
-    }
     file_mgr.set_on_complete([&notifier, notifier_ready](const std::filesystem::path& path, size_t bytes_written) {
         tether::record_received_file(path, bytes_written);
         if (notifier_ready)
             notifier.notify_file_arrived(path);
     });
     tether::g_file_manager = &file_mgr;
+
+    notifier.set_mute_handler([&loop](const std::string& app_id) {
+        // Config writes and the status broadcast belong to the loop.
+        loop.post([app_id] { tether::mute_app(app_id, true); });
+    });
+
+    // A pairing request nobody answered in time stays answerable from a popup.
+    tether::set_pair_pending_handler([&loop, &tcp_srv, &notifier, notifier_ready](const std::string& fingerprint,
+                                                                                    const std::string& device_name,
+                                                                                    const std::string& reason) {
+        if (!notifier_ready)
+            return;
+        tether::NotificationSpec spec;
+        spec.app_name = "Tether";
+        spec.summary = _("Pairing request waiting");
+        // TRANSLATORS: {} is a device name.
+        spec.body = tether::tr_format(reason == "timeout"
+                                          ? _("{} asked to pair with this computer and the prompt timed out. It "
+                                              "stays pending for an hour; answer here or in the Devices tab.")
+                                          : _("{} asked to pair with this computer. Answer here or in the "
+                                              "Devices tab."),
+                                      device_name);
+        spec.icons = {"network-wireless-acquiring", "dialog-question"};
+        spec.system = true;
+        spec.resident = true;
+        spec.key = "pair:" + fingerprint;
+        spec.choices.push_back({"accept", _("Accept"), [&loop, &tcp_srv, fingerprint, device_name] {
+                                    loop.post([&tcp_srv, fingerprint, device_name] {
+                                        // A popup can outlive its request: answered elsewhere,
+                                        // or expired. Then Accept must not pin anything.
+                                        if (!tether::pair_request_pending(fingerprint)) {
+                                            debug::log(INFO, "pairing: {} is no longer pending; ignoring a late Accept", device_name);
+                                            return;
+                                        }
+                                        tcp_srv.accept_device(fingerprint, device_name);
+                                    });
+                                }});
+        spec.choices.push_back({"reject", _("Reject"), [&loop, &tcp_srv, fingerprint] {
+                                    loop.post([&tcp_srv, fingerprint] { tcp_srv.reject_device(fingerprint); });
+                                }});
+        notifier.notify(spec);
+    });
+    // Answered from the app, the CLI or the prompt: the popup goes away.
+    tether::set_pair_answered_handler([&notifier](const std::string& fingerprint) {
+        notifier.withdraw("pair:" + fingerprint);
+    });
 
     notifier.set_copy_handler([&loop](const std::string& code, const std::string& handle) {
         // libnotify dispatches actions on its own thread; the clipboard belongs to the loop.
@@ -207,13 +322,14 @@ int main(int argc, char** argv) {
                 if (tether::mdns_available())
                     return;
                 debug::log(ERR, "mDNS: still unavailable after 15s; notifying the user");
-                notifier.notify({_("Tether"),
-                                 _("This PC can't be discovered"),
-                                 _("avahi-daemon isn't running, so Tether can't advertise itself on the "
-                                   "network. Start it with: sudo systemctl enable --now avahi-daemon"),
-                                 {"network-wireless-offline", "network-offline", "dialog-warning"},
-                                 false,
-                                 ""});
+                tether::NotificationSpec spec;
+                spec.app_name = _("Tether");
+                spec.summary = _("This PC can't be discovered");
+                spec.body = _("avahi-daemon isn't running, so Tether can't advertise itself on the "
+                              "network. Start it with: sudo systemctl enable --now avahi-daemon");
+                spec.icons = {"network-wireless-offline", "network-offline", "dialog-warning"};
+                spec.system = true;
+                notifier.notify(spec);
             });
         }
     }
@@ -264,8 +380,6 @@ int main(int argc, char** argv) {
                              "",
                              message.handle});
         });
-
-    auto bt_config = tether::bluetooth::load_config();
 
     tether::secret::set_retention(bt_config.retention);
     tether::set_desktop_popups_enabled(bt_config.desktop_popups_enabled);
@@ -666,20 +780,24 @@ int main(int argc, char** argv) {
                     const std::string title = notification.title.empty() ? notification.app_name : notification.title;
                     // Some apps put the whole notification in the subtitle and leave the message empty.
                     const std::string body = notification.body.empty() ? notification.subtitle : notification.body;
-                    notifier.notify({notification.app_name,
-                                     title.empty() ? "iPhone" : title,
-                                     tether::popup_previews_enabled() ? body : std::string{},
-                                     tether::bluetooth::ancs::icon_candidates(notification),
-                                     notification.silent,
-                                     "",
-                                     otp,
-                                     notification.app_id});
+                    tether::NotificationSpec spec;
+                    spec.app_name = notification.app_name;
+                    spec.summary = title.empty() ? "iPhone" : title;
+                    spec.body = tether::popup_previews_enabled() ? body : std::string{};
+                    spec.icons = tether::bluetooth::ancs::icon_candidates(notification);
+                    spec.quiet = notification.silent;
+                    spec.otp_code = otp;
+                    spec.app_id = notification.app_id;
+                    spec.key = "ancs:" + std::to_string(notification.uid);
+                    notifier.notify(spec);
                 },
-                [](uint32_t uid) {
+                [&notifier](uint32_t uid) {
                     nlohmann::json event;
                     event["command"] = "bt_notification_removed";
                     event["uid"] = uid;
                     tether::broadcast_local_event(event.dump());
+                    // Dismissed on the phone: the desktop copy goes too.
+                    notifier.withdraw("ancs:" + std::to_string(uid));
                 });
         }
 
@@ -695,10 +813,29 @@ int main(int argc, char** argv) {
         connections.start(tether::bluetooth::supervised_address(bt_config), bt_config.ancs_enabled);
     } else {
         debug::log(INFO, "Bluetooth unavailable; messages and notifications are disabled");
+        // Only a complaint when an iPhone was paired: a machine that never used
+        // Bluetooth should not hear about it at every start.
+        if (!bt_config.device_address.empty() && notifier_ready) {
+            tether::NotificationSpec spec;
+            spec.app_name = "Tether";
+            spec.summary = _("Bluetooth is unavailable");
+            spec.body = _("bluetoothd could not be reached, so messages, contacts and notifications from the "
+                          "iPhone are off until it is. Check: systemctl status bluetooth");
+            spec.icons = {"bluetooth-disabled", "dialog-warning"};
+            spec.system = true;
+            notifier.notify(spec);
+        }
     }
 
     debug::log(INFO, "tetherd is running. Press Ctrl-C to stop.");
     loop.run();
+
+    // The notifier thread outlives the loop and the servers its handlers post
+    // to; detach them before those go away.
+    tether::set_pair_pending_handler(nullptr);
+    tether::set_pair_answered_handler(nullptr);
+    notifier.set_mute_handler(nullptr);
+    notifier.set_copy_handler(nullptr);
 
     // discovery destructor calls unpublish() automatically
     debug::log(INFO, "tetherd shutdown complete.");

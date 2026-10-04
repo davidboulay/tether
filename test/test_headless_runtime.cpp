@@ -279,10 +279,9 @@ namespace {
         check_pending_pair();
     }
 
-    class DialogRejection : public HeadlessRuntime, public ::testing::WithParamInterface<int> {};
-    TEST_P(DialogRejection, ExplicitRejectionAndTimeoutAreNotTreatedAsMissingGui) {
+    TEST_F(HeadlessRuntime, ExplicitRejectionFromTheDialogRefusesThePeer) {
         env["WAYLAND_DISPLAY"] = "test-display";
-        std::ofstream(root / "bin/tether-dialog") << "#!/bin/sh\nexit " << GetParam() << "\n";
+        std::ofstream(root / "bin/tether-dialog") << "#!/bin/sh\nexit 1\n";
         fs::permissions(root / "bin/tether-dialog", fs::perms::owner_all);
         Peer local, phone;
         start(local);
@@ -290,9 +289,69 @@ namespace {
         phone.send({{"command", "pair_request"}, {"device_name", "test phone"}});
         EXPECT_EQ(phone.until("pair_rejected").value("command", ""), "pair_rejected");
         local.send({{"command", "state_snapshot"}});
-        EXPECT_TRUE(local.until("state_snapshot")["paired_devices"].empty());
+        const auto snapshot = local.until("state_snapshot");
+        EXPECT_TRUE(snapshot["paired_devices"].empty());
+        EXPECT_TRUE(snapshot["pending_pairs"].empty()) << "a refused request is not offered again";
     }
-    INSTANTIATE_TEST_SUITE_P(DialogExit, DialogRejection, ::testing::Values(1, 2));
+
+    // A prompt nobody answered is not a refusal: the request stays answerable.
+    TEST_F(HeadlessRuntime, DialogTimeoutLeavesThePairingPending) {
+        env["WAYLAND_DISPLAY"] = "test-display";
+        std::ofstream(root / "bin/tether-dialog") << "#!/bin/sh\nexit 2\n";
+        fs::permissions(root / "bin/tether-dialog", fs::perms::owner_all);
+        Peer local, phone;
+        start(local);
+        connect_phone(phone);
+        phone.send({{"command", "pair_request"}, {"device_name", "test phone"}});
+        ASSERT_EQ(phone.until("pair_pending").value("command", ""), "pair_pending");
+        EXPECT_TRUE(phone.next(600ms).is_null()) << "a timed-out prompt must neither reject nor accept";
+        local.send({{"command", "state_snapshot"}});
+        EXPECT_EQ(local.until("state_snapshot")["pending_pairs"].size(), 1u);
+        const auto fp = tether::Crypto::instance().get_my_fingerprint();
+        local.send({{"command", "accept_device"}, {"fingerprint", fp}});
+        EXPECT_TRUE(local.until("accept_device_result").value("connected", false));
+        EXPECT_EQ(phone.until("pair_accepted").value("command", ""), "pair_accepted");
+    }
+
+    TEST_F(HeadlessRuntime, LocalRejectRefusesAPendingRequest) {
+        env["WAYLAND_DISPLAY"] = "test-display";
+        std::ofstream(root / "bin/tether-dialog") << "#!/bin/sh\nexit 2\n";
+        fs::permissions(root / "bin/tether-dialog", fs::perms::owner_all);
+        Peer local, phone;
+        start(local);
+        connect_phone(phone);
+        phone.send({{"command", "pair_request"}, {"device_name", "test phone"}});
+        ASSERT_EQ(phone.until("pair_pending").value("command", ""), "pair_pending");
+        const auto fp = tether::Crypto::instance().get_my_fingerprint();
+        local.send({{"command", "reject_device"}, {"fingerprint", fp}});
+        EXPECT_TRUE(local.until("reject_device_result").value("rejected", false));
+        EXPECT_EQ(phone.until("pair_rejected").value("command", ""), "pair_rejected");
+        local.send({{"command", "state_snapshot"}});
+        const auto snapshot = local.until("state_snapshot");
+        EXPECT_TRUE(snapshot["pending_pairs"].empty());
+        EXPECT_TRUE(snapshot["paired_devices"].empty());
+        // Nothing left to refuse.
+        local.send({{"command", "reject_device"}, {"fingerprint", fp}});
+        EXPECT_FALSE(local.until("reject_device_result").value("rejected", true));
+    }
+
+    TEST_F(HeadlessRuntime, SettingsReplyOnTheCallersSocket) {
+        Peer local;
+        start(local);
+        local.send({{"command", "set_clipboard_sync"}, {"enabled", false}});
+        auto status = local.until("bt_status");
+        EXPECT_EQ(status.value("command", ""), "bt_status");
+        EXPECT_FALSE(status.value("clipboard_sync_enabled", true));
+        local.send({{"command", "set_app_muted"}, {"app_id", "com.example.chatty"}, {"muted", true}});
+        status = local.until("bt_status");
+        ASSERT_TRUE(status["muted_apps"].is_array());
+        EXPECT_EQ(status["muted_apps"].size(), 1u);
+        local.send({{"command", "set_app_muted"}, {"app_id", "com.example.chatty"}, {"muted", false}});
+        status = local.until("bt_status");
+        EXPECT_TRUE(status["muted_apps"].empty());
+        local.send({{"command", "set_clipboard_sync"}, {"enabled", true}});
+        EXPECT_TRUE(local.until("bt_status").value("clipboard_sync_enabled", false));
+    }
 
     TEST_F(HeadlessRuntime, CliApprovalSupersedesAnOutstandingDialog) {
         env["WAYLAND_DISPLAY"] = "test-display";

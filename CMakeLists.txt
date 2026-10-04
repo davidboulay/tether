@@ -194,6 +194,10 @@ install_if_dir_exists("${CMAKE_CURRENT_SOURCE_DIR}/packaging/firewall/tether.xml
 # Extension Building only if npm is available
 option(TETHER_BUILD_EXTENSIONS "Build browser and mail extensions automatically" ON)
 find_program(NPM_EXECUTABLE npm)
+option(TETHER_REQUIRE_EXTENSIONS "Fail configuration if extension bundles cannot be built" OFF)
+if(TETHER_REQUIRE_EXTENSIONS AND (NOT TETHER_BUILD_EXTENSIONS OR NOT NPM_EXECUTABLE))
+    message(FATAL_ERROR "This package requires extension bundles: enable TETHER_BUILD_EXTENSIONS and install npm")
+endif()
 
 if(TETHER_BUILD_EXTENSIONS AND NPM_EXECUTABLE)
     set(EXTENSION_BUILD_DIR "${CMAKE_BINARY_DIR}/extension_bundles")
@@ -211,8 +215,7 @@ if(TETHER_BUILD_EXTENSIONS AND NPM_EXECUTABLE)
             "${EXTENSION_BUILD_DIR}/tether-mail-extension.xpi"
             "${EXTENSION_BUILD_DIR}/tether-chromium-extension.zip"
             DESTINATION "${CMAKE_INSTALL_DATADIR}/tether/extensions"
-            COMPONENT extensions
-            OPTIONAL)
+            COMPONENT extensions)
 endif()
 
 # CPack Configuration
@@ -249,3 +252,7 @@ set(CPACK_RPM_PACKAGE_RELOCATABLE FALSE)
 set(CPACK_GENERATOR "TGZ;DEB;RPM")
 
 include(CPack)
+
+# --- shell completions (packaging/completions/completions.cmake) ---
+include("${CMAKE_CURRENT_SOURCE_DIR}/packaging/completions/completions.cmake")
+# --- end shell completions ---

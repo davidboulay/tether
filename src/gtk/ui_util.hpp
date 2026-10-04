@@ -48,4 +48,7 @@ namespace tether::ui {
     // next step, so they are passed through verbatim rather than summarised.
     void set_route_status(Route route, bool ok, const std::string& detail);
 
+    // Shows or hides the header spinner that says a device scan is running.
+    void main_window_set_scanning(bool scanning);
+
 } // namespace tether::ui

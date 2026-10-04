@@ -2,10 +2,12 @@
 
 #include "daemon_client.hpp"
 #include "prefs.hpp"
+#include "toast.hpp"
 #include "tray.hpp"
 #include "ui_util.hpp"
 
 #include <string>
+#include <tether/bluetooth/ancs/notifications.hpp>
 #include <tether/i18n.hpp>
 
 namespace tether::ui {
@@ -38,6 +40,12 @@ namespace tether::ui {
             GtkWidget* sw_calls = nullptr;
 
             GtkWidget* sw_lock_away = nullptr;
+
+            GtkWidget* sw_clipboard = nullptr;
+            GtkWidget* row_clipboard = nullptr;
+
+            GtkWidget* muted_list = nullptr;
+            GtkWidget* muted_empty = nullptr;
 
             nlohmann::json bt_status = nlohmann::json::object();
         };
@@ -111,6 +119,18 @@ namespace tether::ui {
             tray_set_close_to_tray(gtk_switch_get_active(widget) == TRUE);
         }
 
+        void set_switch(GtkWidget* widget, gpointer handler, bool active);
+
+        // A switch is a promise the daemon has to keep. When the command cannot
+        // even be handed over, the switch goes back and the reason is said; the
+        // old behaviour left it flipped with nothing saved behind it.
+        void send_switch(GtkSwitch* widget, gpointer handler, const nlohmann::json& command) {
+            if (daemon_send(command))
+                return;
+            set_switch(GTK_WIDGET(widget), handler, !gtk_switch_get_active(widget));
+            show_toast(_("The Tether daemon is not running, so this setting was not changed."), ToastLevel::Error);
+        }
+
         void on_tray_icon_changed(GtkComboBox* combo, gpointer) {
             if (const gchar* id = gtk_combo_box_get_active_id(combo)) {
                 prefs()["tray_icon"] = std::string(id);
@@ -119,32 +139,115 @@ namespace tether::ui {
         }
 
         void on_ancs_toggled(GtkSwitch* widget, GParamSpec*, gpointer) {
-            daemon_send({{"command", "bt_set_ancs"}, {"enabled", gtk_switch_get_active(widget) == TRUE}});
+            send_switch(widget,
+                        reinterpret_cast<gpointer>(on_ancs_toggled),
+                        {{"command", "bt_set_ancs"}, {"enabled", gtk_switch_get_active(widget) == TRUE}});
         }
 
         void on_content_toggled(GtkSwitch* widget, GParamSpec*, gpointer) {
-            daemon_send({{"command", "bt_set_ancs_content"}, {"enabled", gtk_switch_get_active(widget) == TRUE}});
+            send_switch(widget,
+                        reinterpret_cast<gpointer>(on_content_toggled),
+                        {{"command", "bt_set_ancs_content"}, {"enabled", gtk_switch_get_active(widget) == TRUE}});
         }
 
         void on_popups_toggled(GtkSwitch* widget, GParamSpec*, gpointer) {
-            daemon_send({{"command", "set_desktop_popups"}, {"enabled", gtk_switch_get_active(widget) == TRUE}});
+            send_switch(widget,
+                        reinterpret_cast<gpointer>(on_popups_toggled),
+                        {{"command", "set_desktop_popups"}, {"enabled", gtk_switch_get_active(widget) == TRUE}});
         }
 
         void on_previews_toggled(GtkSwitch* widget, GParamSpec*, gpointer) {
-            daemon_send({{"command", "set_popup_previews"}, {"enabled", gtk_switch_get_active(widget) == TRUE}});
+            send_switch(widget,
+                        reinterpret_cast<gpointer>(on_previews_toggled),
+                        {{"command", "set_popup_previews"}, {"enabled", gtk_switch_get_active(widget) == TRUE}});
         }
 
         void on_calls_toggled(GtkSwitch* widget, GParamSpec*, gpointer) {
-            daemon_send({{"command", "bt_set_calls"}, {"enabled", gtk_switch_get_active(widget) == TRUE}});
+            send_switch(widget,
+                        reinterpret_cast<gpointer>(on_calls_toggled),
+                        {{"command", "bt_set_calls"}, {"enabled", gtk_switch_get_active(widget) == TRUE}});
         }
 
         void on_lock_away_toggled(GtkSwitch* widget, GParamSpec*, gpointer) {
-            daemon_send({{"command", "bt_set_lock_on_away"}, {"enabled", gtk_switch_get_active(widget) == TRUE}});
+            send_switch(widget,
+                        reinterpret_cast<gpointer>(on_lock_away_toggled),
+                        {{"command", "bt_set_lock_on_away"}, {"enabled", gtk_switch_get_active(widget) == TRUE}});
         }
 
+        void on_clipboard_toggled(GtkSwitch* widget, GParamSpec*, gpointer) {
+            send_switch(widget,
+                        reinterpret_cast<gpointer>(on_clipboard_toggled),
+                        {{"command", "set_clipboard_sync"}, {"enabled", gtk_switch_get_active(widget) == TRUE}});
+        }
+
+        void set_combo(GtkWidget* widget, gpointer handler, const std::string& id);
+
         void on_retention_changed(GtkComboBox* combo, gpointer) {
-            if (const gchar* id = gtk_combo_box_get_active_id(combo))
-                daemon_send({{"command", "bt_set_retention"}, {"retention", id}});
+            const gchar* id = gtk_combo_box_get_active_id(combo);
+            if (!id)
+                return;
+            const std::string previous = g_settings.bt_status.value("retention", "encrypted");
+            if (std::string(id) == "none" && previous != "none") {
+                // This one deletes what is stored, at once, with no way back.
+                GtkWidget* dialog = gtk_message_dialog_new(GTK_WINDOW(g_settings.window),
+                                                           GTK_DIALOG_MODAL,
+                                                           GTK_MESSAGE_WARNING,
+                                                           GTK_BUTTONS_NONE,
+                                                           "%s",
+                                                           _("Delete the stored message history?"));
+                gtk_message_dialog_format_secondary_text(
+                    GTK_MESSAGE_DIALOG(dialog),
+                    "%s",
+                    _("Messages and contacts already saved on this computer are deleted right away. The phone "
+                      "keeps its own copy, and conversations are re-read from it while connected."));
+                gtk_dialog_add_button(GTK_DIALOG(dialog), _("Cancel"), GTK_RESPONSE_CANCEL);
+                GtkWidget* confirm = gtk_dialog_add_button(GTK_DIALOG(dialog), _("Delete history"), GTK_RESPONSE_OK);
+                gtk_style_context_add_class(gtk_widget_get_style_context(confirm), "destructive-action");
+                gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_CANCEL);
+                const bool confirmed = gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK;
+                gtk_widget_destroy(dialog);
+                if (!confirmed) {
+                    set_combo(GTK_WIDGET(combo), reinterpret_cast<gpointer>(on_retention_changed), previous);
+                    return;
+                }
+            }
+            if (!daemon_send({{"command", "bt_set_retention"}, {"retention", id}})) {
+                set_combo(GTK_WIDGET(combo), reinterpret_cast<gpointer>(on_retention_changed), previous);
+                show_toast(_("The Tether daemon is not running, so this setting was not changed."), ToastLevel::Error);
+            }
+        }
+
+        void on_unmute_clicked(GtkButton* button, gpointer) {
+            const char* app_id = static_cast<const char*>(g_object_get_data(G_OBJECT(button), "app_id"));
+            if (!app_id)
+                return;
+            if (!daemon_send({{"command", "set_app_muted"}, {"app_id", app_id}, {"muted", false}})) {
+                show_toast(_("The Tether daemon is not running, so this setting was not changed."), ToastLevel::Error);
+                return;
+            }
+            gtk_widget_set_sensitive(GTK_WIDGET(button), FALSE);
+        }
+
+        void rebuild_muted_list() {
+            if (!g_settings.muted_list)
+                return;
+            clear_list_box(g_settings.muted_list);
+            const nlohmann::json apps = g_settings.bt_status.value("muted_apps", nlohmann::json::array());
+            for (const auto& app : apps) {
+                if (!app.is_string())
+                    continue;
+                const std::string app_id = app.get<std::string>();
+                std::string name = bluetooth::ancs::derive_app_name(app_id);
+                if (name.empty())
+                    name = app_id;
+                GtkWidget* unmute = gtk_button_new_with_label(_("Unmute"));
+                g_object_set_data_full(G_OBJECT(unmute), "app_id", g_strdup(app_id.c_str()), g_free);
+                g_signal_connect(unmute, "clicked", G_CALLBACK(on_unmute_clicked), nullptr);
+                add_row(g_settings.muted_list, name, name == app_id ? "" : app_id, unmute);
+            }
+            gtk_widget_show_all(g_settings.muted_list);
+            if (g_settings.muted_empty)
+                gtk_widget_set_visible(g_settings.muted_empty, apps.empty());
         }
 
         // gtk_switch_set_active emits notify::active, so every programmatic write
@@ -195,6 +298,13 @@ namespace tether::ui {
             set_switch(g_settings.sw_lock_away,
                        reinterpret_cast<gpointer>(on_lock_away_toggled),
                        status.value("lock_on_away", false));
+
+            set_switch(g_settings.sw_clipboard,
+                       reinterpret_cast<gpointer>(on_clipboard_toggled),
+                       status.value("clipboard_sync_enabled", true));
+            gtk_widget_set_sensitive(g_settings.row_clipboard, daemon_connected());
+
+            rebuild_muted_list();
 
             const std::string retention = status.value("retention", "encrypted");
             set_combo(g_settings.cmb_retention, reinterpret_cast<gpointer>(on_retention_changed), retention);
@@ -265,6 +375,18 @@ namespace tether::ui {
                     _("Symbolic follows the panel's color. Takes effect the next time Tether starts."),
                     g_settings.cmb_tray_icon);
 
+            // Clipboard
+            GtkWidget* clipboard = add_group(
+                column, _("Clipboard"), _("Over Wi-Fi, what is copied here goes to the iPhone and back."));
+            g_settings.sw_clipboard = new_switch();
+            g_signal_connect(g_settings.sw_clipboard, "notify::active", G_CALLBACK(on_clipboard_toggled), nullptr);
+            g_settings.row_clipboard =
+                add_row(clipboard,
+                        _("Sync the clipboard automatically"),
+                        _("Off pauses it both ways; Send Clipboard on the Devices page still works. Copies a "
+                          "password manager marks as sensitive are never sent."),
+                        g_settings.sw_clipboard);
+
             // iPhone notifications
             GtkWidget* ancs = add_group(
                 column, _("iPhone notifications"), _("Alerts your iPhone forwards to this computer over Bluetooth."));
@@ -299,6 +421,17 @@ namespace tether::ui {
             g_signal_connect(g_settings.sw_previews, "notify::active", G_CALLBACK(on_previews_toggled), nullptr);
             g_settings.row_previews =
                 add_row(popups, _("Show message previews"), _("Off shows only the sender."), g_settings.sw_previews);
+
+            // Muted apps: filled from bt_status. The Mute button on a popup adds to it.
+            g_settings.muted_list = add_group(column,
+                                              _("Muted apps"),
+                                              _("iPhone apps whose alerts show no popup here. They still appear "
+                                                "on the Notifications tab. Mute one from its popup."));
+            g_settings.muted_empty = gtk_label_new(_("No apps are muted."));
+            gtk_label_set_xalign(GTK_LABEL(g_settings.muted_empty), 0.0);
+            gtk_style_context_add_class(gtk_widget_get_style_context(g_settings.muted_empty), "muted");
+            gtk_widget_set_no_show_all(g_settings.muted_empty, TRUE);
+            gtk_box_pack_start(GTK_BOX(column), g_settings.muted_empty, FALSE, FALSE, 0);
 
             // Security
             GtkWidget* security = add_group(column, _("Security"), _("What Tether does when the iPhone leaves."));

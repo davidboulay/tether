@@ -4,6 +4,7 @@
 #include "tether/secret_store.hpp"
 
 #include <string>
+#include <vector>
 
 namespace tether::bluetooth {
 
@@ -63,6 +64,12 @@ namespace tether::bluetooth {
         int lock_away_seconds = AWAY_LOCK_GRACE_SECONDS;
         // What performs the lock. Empty uses logind.
         std::string lock_command;
+        // Whether local clipboard changes go to the phone and the phone's come
+        // here on their own. Off pauses both; an explicit send still works.
+        bool clipboard_sync_enabled = true;
+        // iPhone bundle ids whose mirrored notifications show no desktop popup.
+        // They still reach the Notifications tab.
+        std::vector<std::string> muted_apps;
 
         bool operator==(const Config&) const = default;
     };

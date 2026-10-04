@@ -1,6 +1,16 @@
 // Content script for browsers (Chrome/Firefox)
 // This runs in the context of webpages and looks for OTP input fields
 
+import { showToast, dismissToast } from './toast.js';
+import {
+  DEFAULT_SETTINGS,
+  loadSettings,
+  onSettingsChanged,
+  loadKnownSites,
+  isKnownSite,
+  rememberSite,
+} from '../shared/settings.js';
+
 export function findOtpInputs(doc) {
   const inputs = [...doc.querySelectorAll('input')];
 
@@ -107,6 +117,24 @@ function fireInputEvents(el) {
   el.dispatchEvent(new Ev('change', { bubbles: true }));
 }
 
+// Snapshot the fields' values so a fill can be undone.
+export function captureFieldValues(fields) {
+  return fields.map((el) => String(el.value ?? ''));
+}
+
+// Restore what the fields held before the fill, firing the same input/change
+// events the fill does so framework-controlled inputs follow along.
+export function undoFill(fields, previousValues) {
+  for (let i = 0; i < fields.length; i++) {
+    const el = fields[i];
+    if (!el) continue;
+    const prev = previousValues && i < previousValues.length ? previousValues[i] : '';
+    if (String(el.value ?? '') === prev) continue;
+    setNativeValue(el, prev);
+    fireInputEvents(el);
+  }
+}
+
 // Put focus on the filled field so screen readers announce the code and Enter
 // submits it. Focus is never pulled away from a field the user is typing in.
 function focusFilled(doc, target, fields) {
@@ -162,29 +190,62 @@ export function handleFillOtp(doc, msg, io = {}) {
 
   const splitFields = detectSplitOtp(doc);
   if (splitFields && splitFields.every(isFieldVisible)) {
-    for (let i = 0; i < Math.min(otp.length, splitFields.length); i++) {
+    const n = Math.min(otp.length, splitFields.length);
+    const touched = splitFields.slice(0, n);
+    const previousValues = captureFieldValues(touched);
+    for (let i = 0; i < n; i++) {
       setNativeValue(splitFields[i], otp[i]);
       // dispatch events so react/vue/angular crap pick up the change
       fireInputEvents(splitFields[i]);
     }
-    focusFilled(doc, splitFields[Math.min(otp.length, splitFields.length) - 1], splitFields);
+    focusFilled(doc, splitFields[n - 1], splitFields);
     if (id) filledOtpIds.add(id);
     io.onFilled?.(id);
+    io.onFill?.(makeFillDetail(id, touched, previousValues));
     return { filled: true };
   }
 
   const regularFields = findOtpInputs(doc).filter(isFieldVisible);
   // fill when empty, or overwrite a stale/partial value
   if (regularFields.length > 0 && regularFields[0].value !== otp) {
+    const touched = [regularFields[0]];
+    const previousValues = captureFieldValues(touched);
     setNativeValue(regularFields[0], otp);
     fireInputEvents(regularFields[0]);
     focusFilled(doc, regularFields[0], regularFields);
     if (id) filledOtpIds.add(id);
     io.onFilled?.(id);
+    io.onFill?.(makeFillDetail(id, touched, previousValues));
     return { filled: true };
   }
 
   return { filled: false };
+}
+
+// What a fill touched, with a one-shot undo that puts the old values back and
+// lets the same otp_id be filled again afterwards.
+function makeFillDetail(otpId, fields, previousValues) {
+  let undone = false;
+  return {
+    otpId,
+    fields,
+    previousValues,
+    undo() {
+      if (undone) return false;
+      undone = true;
+      undoFill(fields, previousValues);
+      if (otpId) filledOtpIds.delete(otpId);
+      return true;
+    },
+  };
+}
+
+// Can this document take a code right now? Used by the popup's "Fill on this
+// page" to explain why nothing happened.
+export function hasVisibleOtpFields(doc) {
+  const splits = detectSplitOtp(doc);
+  if (splits && splits.every(isFieldVisible)) return true;
+  return findOtpInputs(doc).some(isFieldVisible);
 }
 
 // ---------------------------------------------------------------------------
@@ -197,7 +258,15 @@ let otpInterval = null;
 // last code id this page was offered
 let lastSeenOtpId = 0;
 
+// Settings start at the defaults and are refreshed from storage.sync.
+let settings = { ...DEFAULT_SETTINGS };
+let knownSites = [];
+loadSettings().then((s) => { settings = s; }).catch(() => {});
+loadKnownSites().then((list) => { knownSites = list; }).catch(() => {});
+onSettingsChanged((s) => { settings = s; });
+
 function requestOtp() {
+  if (!settings.autofill) return;
   chrome.runtime.sendMessage({
     action: "request_otp_for_site",
     url: window.location.hostname
@@ -264,22 +333,89 @@ document.addEventListener('visibilitychange', () => {
   if (hasOtpFields()) startOtpFlow();
 });
 
-// listen for OTPs sent from the daemon
+// Fill the code now, show the toast (unless turned off), remember the site.
+function fillNow(request, { announce = true } = {}) {
+  const result = handleFillOtp(document, request, {
+    onFilled: () => {
+      if (otpInterval) clearInterval(otpInterval);
+    },
+    onFill: (detail) => {
+      rememberSite(window.location.hostname).then((list) => { knownSites = list; }).catch(() => {});
+      if (!announce || !settings.toast) return;
+      showToast(document, {
+        message: 'Code from iPhone filled',
+        actions: [{
+          label: 'Undo',
+          onClick: () => {
+            detail.undo();
+            const first = detail.fields[0];
+            if (first && typeof first.focus === 'function') first.focus();
+          },
+        }],
+      });
+    },
+  });
+  return result;
+}
+
+// Ask before filling on a hostname that has never been filled before. The
+// background is told "not filled" so it can offer the code to another tab;
+// if the user accepts here we consume it ourselves.
+function askThenFill(request) {
+  if (!hasVisibleOtpFields(document)) return { filled: false, reason: 'no_fields' };
+  showToast(document, {
+    message: `Fill the code from your iPhone on ${window.location.hostname}?`,
+    sticky: true,
+    actions: [
+      {
+        label: 'Fill',
+        primary: true,
+        onClick: () => {
+          // Send the consume first: the fill may auto-submit and navigate away
+          // before a later message would get out.
+          consumeOtp(request.otp_id);
+          fillNow(request);
+        },
+      },
+      { label: 'Not now' },
+    ],
+  });
+  return { filled: false, reason: 'asked' };
+}
+
+// listen for OTPs sent from the daemon (and the popup's "Fill on this page")
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action !== "fill_otp") return;
+  if (!request || request.action !== "fill_otp") return;
 
   // Only fill into a page the user is actually looking at.
   if (!isPageVisible(document)) {
-    sendResponse({ filled: false });
+    sendResponse({ filled: false, reason: 'hidden' });
     return;
   }
 
   lastSeenOtpId = request.otp_id || lastSeenOtpId;
-  const result = handleFillOtp(document, request, {
-    onFilled: () => {
-      if (otpInterval) clearInterval(otpInterval);
+
+  // The popup asked for it explicitly: no settings gate, no prompt.
+  if (request.manual) {
+    dismissToast(document);
+    if (!hasVisibleOtpFields(document)) {
+      sendResponse({ filled: false, reason: 'no_fields' });
+      return;
     }
-  });
-  sendResponse(result);
+    sendResponse(fillNow(request));
+    return;
+  }
+
+  if (!settings.autofill) {
+    sendResponse({ filled: false, reason: 'autofill_off' });
+    return;
+  }
+
+  if (settings.askUnknownSites && !isKnownSite(window.location.hostname, knownSites)) {
+    sendResponse(askThenFill(request));
+    return;
+  }
+
+  sendResponse(fillNow(request));
 });
 }

@@ -1,3 +1,4 @@
+#include "banners.hpp"
 #include "calls_view.hpp"
 #include "contact_completion.hpp"
 #include "contacts_view.hpp"
@@ -7,6 +8,7 @@
 #include "notifications_view.hpp"
 #include "prefs.hpp"
 #include "settings_view.hpp"
+#include "toast.hpp"
 #include "tray.hpp"
 #include "ui_util.hpp"
 
@@ -22,6 +24,8 @@ namespace {
     using namespace tether::ui;
 
     GtkWidget* g_refresh_button = nullptr;
+    GtkWidget* g_scan_spinner = nullptr;
+    guint g_scan_spinner_id = 0;
     GtkWidget* g_stack = nullptr;
     GtkWidget* g_calls_page = nullptr;
     gboolean g_start_hidden = FALSE;
@@ -64,6 +68,8 @@ namespace {
         // views, so it only appears where it does something.
         if (g_refresh_button)
             gtk_widget_set_visible(g_refresh_button, view == "devices");
+        if (g_scan_spinner && view != "devices")
+            gtk_widget_hide(g_scan_spinner);
 
         messages_view_set_visible(view == "messages");
         calls_view_set_visible(view == "calls");
@@ -204,6 +210,17 @@ namespace {
             window, "destroy", G_CALLBACK(+[](GtkWidget*, gpointer) { set_main_window(nullptr); }), nullptr);
         install_actions(app, window);
         tray_init();
+        // Started for the tray on a desktop with no tray would be a window
+        // nobody can ever reach.
+        tray_on_no_host([] {
+            if (GtkWidget* w = main_window()) {
+                if (!gtk_widget_get_visible(w)) {
+                    gtk_widget_show(w);
+                    gtk_window_present(GTK_WINDOW(w));
+                    show_toast(_("No system tray was found, so the window is shown instead."));
+                }
+            }
+        });
 
         GtkWidget* header_bar = gtk_header_bar_new();
         gtk_header_bar_set_show_close_button(GTK_HEADER_BAR(header_bar), TRUE);
@@ -212,6 +229,7 @@ namespace {
         set_header_bar(header_bar);
 
         gtk_header_bar_pack_end(GTK_HEADER_BAR(header_bar), create_app_menu_button());
+        gtk_header_bar_pack_end(GTK_HEADER_BAR(header_bar), create_history_button());
 
         g_refresh_button = gtk_button_new_from_icon_name("view-refresh-symbolic", GTK_ICON_SIZE_BUTTON);
         gtk_widget_set_tooltip_text(g_refresh_button, _("Look for devices"));
@@ -221,6 +239,13 @@ namespace {
                          G_CALLBACK(+[](GtkWidget*, gpointer) { devices_view_trigger_discovery(); }),
                          nullptr);
         gtk_header_bar_pack_start(GTK_HEADER_BAR(header_bar), g_refresh_button);
+
+        // Spins while a scan is in flight, so "nothing found yet" is not
+        // mistaken for "nothing is happening".
+        g_scan_spinner = gtk_spinner_new();
+        gtk_widget_set_tooltip_text(g_scan_spinner, _("Scanning for devices…"));
+        gtk_widget_set_no_show_all(g_scan_spinner, TRUE);
+        gtk_header_bar_pack_start(GTK_HEADER_BAR(header_bar), g_scan_spinner);
 
         GtkWidget* stack = gtk_stack_new();
         g_stack = stack;
@@ -245,9 +270,10 @@ namespace {
         g_signal_connect(stack, "notify::visible-child-name", G_CALLBACK(on_visible_view_changed), nullptr);
 
         GtkWidget* root = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+        gtk_box_pack_start(GTK_BOX(root), banners_new(), FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(root), stack, TRUE, TRUE, 0);
         gtk_box_pack_start(GTK_BOX(root), create_route_bar(), FALSE, FALSE, 0);
-        gtk_container_add(GTK_CONTAINER(window), root);
+        gtk_container_add(GTK_CONTAINER(window), create_toast_overlay(root));
 
         // One feed, dispatched to whichever view owns the event; the views never
         // hold the socket themselves.
@@ -259,8 +285,16 @@ namespace {
         daemon_client_start([](const nlohmann::json& event) {
             contact_completion_update(event);
             settings_handle_event(event);
-            if (event.value("command", "") == "bt_status")
+            if (event.value("command", "") == "bt_status") {
                 set_calls_tab_visible(event.value("calls_enabled", false));
+                contacts_view_set_calls_enabled(event.value("calls_enabled", false));
+                banners_set_daemon_version(event.value("version", ""));
+                tray_set_clipboard_sync(event.value("clipboard_sync_enabled", true));
+            }
+            // Scan activity, for the header spinner.
+            const std::string command = event.value("command", "");
+            if (command == "discovery_result" || command == "bt_scan_result" || command == "bt_devices")
+                main_window_set_scanning(false);
             if (devices_view_handle_event(event))
                 return;
             if (contacts_view_handle_event(event))
@@ -275,7 +309,7 @@ namespace {
         devices_view_trigger_discovery();
         devices_view_refresh();
 
-        gtk_widget_show_all(root);
+        gtk_widget_show_all(gtk_bin_get_child(GTK_BIN(window)));
         gtk_widget_show_all(header_bar);
         set_calls_tab_visible(false);
         if (!g_start_hidden)
@@ -284,6 +318,38 @@ namespace {
     }
 
 } // namespace
+
+namespace tether::ui {
+
+    void main_window_set_scanning(bool scanning) {
+        if (!g_scan_spinner)
+            return;
+        if (g_scan_spinner_id != 0) {
+            g_source_remove(g_scan_spinner_id);
+            g_scan_spinner_id = 0;
+        }
+        if (!scanning) {
+            gtk_spinner_stop(GTK_SPINNER(g_scan_spinner));
+            gtk_widget_hide(g_scan_spinner);
+            return;
+        }
+        const gchar* name = g_stack ? gtk_stack_get_visible_child_name(GTK_STACK(g_stack)) : nullptr;
+        if (!name || std::string(name) != "devices")
+            return;
+        gtk_widget_show(g_scan_spinner);
+        gtk_spinner_start(GTK_SPINNER(g_scan_spinner));
+        // A scan the daemon never answers must not spin forever.
+        g_scan_spinner_id = g_timeout_add_seconds(
+            35,
+            [](gpointer) -> gboolean {
+                g_scan_spinner_id = 0;
+                main_window_set_scanning(false);
+                return G_SOURCE_REMOVE;
+            },
+            nullptr);
+    }
+
+} // namespace tether::ui
 
 int main(int argc, char** argv) {
     tether::init_locale();

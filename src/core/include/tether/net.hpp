@@ -94,6 +94,34 @@ namespace tether {
     void set_desktop_popups_enabled(bool enabled);
     bool desktop_popups_enabled();
 
+    // Whether clipboard changes are mirrored on their own, in either direction.
+    // Off is a pause: an explicit send or paste still works.
+    void set_clipboard_sync_enabled(bool enabled);
+    bool clipboard_sync_enabled();
+
+    // iPhone apps (bundle ids) whose mirrored notifications show no desktop
+    // popup. They still reach the Notifications tab and the event feed.
+    void set_muted_apps(const std::vector<std::string>& apps);
+    std::vector<std::string> muted_apps();
+    bool app_muted(const std::string& app_id);
+    // Saves the change, applies it, and broadcasts the new bt_status. Any thread.
+    void mute_app(const std::string& app_id, bool muted);
+
+    // An inbound pairing request was left waiting: its prompt timed out, or no
+    // prompt could be shown. Reason is "timeout" or "no_dialog". The handler
+    // can offer another way to answer, such as a desktop notification.
+    using PairPendingFn =
+        std::function<void(const std::string& fingerprint, const std::string& device_name, const std::string& reason)>;
+    void set_pair_pending_handler(PairPendingFn handler);
+
+    // A pairing request was answered, either way, from anywhere: the handler
+    // withdraws whatever was still offering it.
+    using PairAnsweredFn = std::function<void(const std::string& fingerprint)>;
+    void set_pair_answered_handler(PairAnsweredFn handler);
+
+    // Whether an inbound request for this fingerprint is still waiting.
+    bool pair_request_pending(const std::string& fingerprint);
+
     // Whether phone popups include the message text. Off keeps only the sender.
     void set_popup_previews_enabled(bool enabled);
     bool popup_previews_enabled();
@@ -150,6 +178,11 @@ namespace tether {
         // Drops a pairing: unpins the fingerprint and closes any live session with it.
         // Returns true when the fingerprint was pinned.
         bool forget_device(const std::string& fingerprint);
+
+        // Refuses an inbound pairing request: forgets the pending entry, tells the
+        // peer, closes its session and dismisses any prompt still open for it.
+        // Returns true when there was something to refuse.
+        bool reject_device(const std::string& fingerprint);
 
         // Invoked when the set of trusted peers gains a member with no live session.
         void set_peers_changed_callback(std::function<void()> callback);

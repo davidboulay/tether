@@ -4,6 +4,8 @@ pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
 add_executable(tether-gtk
     main.cpp
     ui_util.cpp
+    toast.cpp
+    banners.cpp
     prefs.cpp
     message_format.cpp
     calls_view.cpp

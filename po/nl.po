@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-10-02 19:39-0700\n"
+"POT-Creation-Date: 2026-10-04 13:09+0200\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Dutch\n"
@@ -25,6 +25,36 @@ msgstr "ja"
 #: src/cli/main.cpp
 msgid "no"
 msgstr "nee"
+
+#: src/cli/main.cpp
+msgid "Could not reach the daemon."
+msgstr "Kon de daemon niet bereiken."
+
+#: src/cli/main.cpp
+msgid "The daemon did not answer in time."
+msgstr "De daemon antwoordde niet op tijd."
+
+#: src/cli/main.cpp
+msgid "The daemon closed the connection before answering."
+msgstr "De daemon sloot de verbinding voordat hij antwoordde."
+
+#: src/cli/main.cpp
+msgid "The daemon does not know this command; it may be an older tetherd."
+msgstr "De daemon kent deze opdracht niet; mogelijk is het een oudere tetherd."
+
+#: src/cli/main.cpp
+msgid "The daemon sent an unreadable reply."
+msgstr "De daemon stuurde een onleesbaar antwoord."
+
+#: src/cli/main.cpp
+msgid "The daemon did not confirm the change; it may be an older tetherd.\n"
+msgstr ""
+"De daemon heeft de wijziging niet bevestigd; mogelijk is het een oudere "
+"tetherd.\n"
+
+#: src/cli/main.cpp
+msgid "The daemon did not apply the change.\n"
+msgstr "De daemon heeft de wijziging niet toegepast.\n"
 
 #: src/cli/main.cpp
 msgid "Show this help message."
@@ -272,12 +302,46 @@ msgid "Accept a pending pairing request locally."
 msgstr "Een openstaand koppelverzoek lokaal accepteren."
 
 #: src/cli/main.cpp
+msgid "Turn down a pending pairing request, and tell the other device so."
+msgstr ""
+"Een openstaand koppelverzoek weigeren en dat aan het andere apparaat laten "
+"weten."
+
+#: src/cli/main.cpp
 msgid "Remove a Wi-Fi pairing and drop its session."
 msgstr "Een wifi-koppeling verwijderen en de sessie sluiten."
 
 #: src/cli/main.cpp
 msgid "Send a pair_request over TCP to the daemon."
 msgstr "Een pair_request via TCP naar de daemon sturen."
+
+#: src/cli/main.cpp
+msgid ""
+"Pause or resume sending this computer's clipboard to the iPhone, or show "
+"which it is."
+msgstr ""
+"Het versturen van het klembord van deze computer naar de iPhone pauzeren of "
+"hervatten, of tonen wat de huidige stand is."
+
+#: src/cli/main.cpp
+msgid ""
+"Stop showing desktop popups from one iPhone app, named by its bundle id, or "
+"list the muted apps."
+msgstr ""
+"Geen bureaubladmeldingen meer tonen van één iPhone-app, aangeduid met zijn "
+"bundle-id, of de gedempte apps tonen."
+
+#: src/cli/main.cpp
+msgid "Show desktop popups from a muted iPhone app again."
+msgstr "Bureaubladmeldingen van een gedempte iPhone-app weer tonen."
+
+#: src/cli/main.cpp
+msgid ""
+"Print the daemon's reply as JSON instead of text, on the commands that read "
+"state."
+msgstr ""
+"Het antwoord van de daemon als JSON in plaats van tekst afdrukken, bij de "
+"opdrachten die status uitlezen."
 
 #: src/cli/main.cpp
 msgid "tether - Wayland companion CLI"
@@ -298,6 +362,10 @@ msgstr "Elke --bt-<name>-optie, als subopdracht."
 #: src/cli/main.cpp
 msgid "Examples:"
 msgstr "Voorbeelden:"
+
+#: src/cli/main.cpp
+msgid "Shell completion: tether --print-completions <bash|zsh|fish>"
+msgstr "Shell-aanvulling: tether --print-completions <bash|zsh|fish>"
 
 #: src/cli/main.cpp
 #, c-format
@@ -377,10 +445,10 @@ msgstr[1] ""
 #, c-format
 msgid ""
 "\n"
-"Re-run 'tether --bt-setup' afterwards to confirm.\n"
+"Re-run 'tether bt setup' afterwards to confirm.\n"
 msgstr ""
 "\n"
-"Voer daarna 'tether --bt-setup' opnieuw uit ter bevestiging.\n"
+"Voer daarna 'tether bt setup' opnieuw uit ter bevestiging.\n"
 
 #: src/cli/main.cpp
 msgid "Mode"
@@ -430,8 +498,8 @@ msgid "mirroring on"
 msgstr "spiegelen ingeschakeld"
 
 #: src/cli/main.cpp
-msgid "mirroring off (tether --bt-ancs on)"
-msgstr "spiegelen uitgeschakeld (tether --bt-ancs on)"
+msgid "mirroring off (tether bt ancs on)"
+msgstr "spiegelen uitgeschakeld (tether bt ancs on)"
 
 #: src/cli/main.cpp src/daemon/main.cpp src/gtk/main.cpp
 #: src/gtk/tether-gtk.desktop.in
@@ -443,8 +511,8 @@ msgid "connecting"
 msgstr "verbinden"
 
 #: src/cli/main.cpp
-msgid "off (--bt-enable on)"
-msgstr "uit (--bt-enable on)"
+msgid "off (tether bt enable on)"
+msgstr "uit (tether bt enable on)"
 
 #: src/cli/main.cpp
 msgid "History"
@@ -453,10 +521,10 @@ msgstr "Geschiedenis"
 #: src/cli/main.cpp
 msgid ""
 "paused - the desktop keyring has no key to offer yet.\n"
-"Unlock it, or run 'tether --bt-retention plaintext'."
+"Unlock it, or run 'tether bt retention plaintext'."
 msgstr ""
 "gepauzeerd - de sleutelbos van het bureaublad heeft nog geen sleutel.\n"
-"Ontgrendel hem of voer 'tether --bt-retention plaintext' uit."
+"Ontgrendel hem of voer 'tether bt retention plaintext' uit."
 
 #: src/cli/main.cpp
 msgid "in use"
@@ -472,16 +540,16 @@ msgstr ""
 #, c-format
 msgid ""
 "\n"
-"%zu setup step remaining. Run: tether --bt-setup\n"
+"%zu setup step remaining. Run: tether bt setup\n"
 msgid_plural ""
 "\n"
-"%zu setup steps remaining. Run: tether --bt-setup\n"
+"%zu setup steps remaining. Run: tether bt setup\n"
 msgstr[0] ""
 "\n"
-"Nog %zu installatiestap over. Voer uit: tether --bt-setup\n"
+"Nog %zu installatiestap over. Voer uit: tether bt setup\n"
 msgstr[1] ""
 "\n"
-"Nog %zu installatiestappen over. Voer uit: tether --bt-setup\n"
+"Nog %zu installatiestappen over. Voer uit: tether bt setup\n"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth devices from the daemon.\n"
@@ -531,10 +599,6 @@ msgstr ""
 "main.conf."
 
 #: src/cli/main.cpp
-msgid "Could not reach the daemon.\n"
-msgstr "Kon de daemon niet bereiken.\n"
-
-#: src/cli/main.cpp
 #, c-format
 msgid "Listening mode set to %s.\n"
 msgstr "Luistermodus ingesteld op %s.\n"
@@ -548,9 +612,9 @@ msgid "Use never, one-removed or both-removed.\n"
 msgstr "Gebruik never, one-removed of both-removed.\n"
 
 #: src/cli/main.cpp
-#, c-format
-msgid "Pause on removal set to %s.\n"
-msgstr "Pauzeren bij uitnemen ingesteld op %s.\n"
+#, c++-format
+msgid "Pause on removal set to {}."
+msgstr "Pauzeren bij uitnemen ingesteld op {}."
 
 #: src/cli/main.cpp
 msgid "Use on or off.\n"
@@ -582,6 +646,10 @@ msgstr "De sessie wordt vergrendeld wanneer de iPhone buiten bereik raakt."
 #: src/cli/main.cpp
 msgid "Locking on the iPhone going out of range is off."
 msgstr "Vergrendelen wanneer de iPhone buiten bereik raakt staat uit."
+
+#: src/cli/main.cpp
+msgid "Could not reach the daemon.\n"
+msgstr "Kon de daemon niet bereiken.\n"
 
 #: src/cli/main.cpp
 msgid "Daemon closed the connection before the operation finished.\n"
@@ -666,8 +734,8 @@ msgstr "Kon de oproepen niet van de service lezen.\n"
 
 #: src/cli/main.cpp
 #, c-format
-msgid "No calls. Check 'tether --bt-connection'.\n"
-msgstr "Geen oproepen. Controleer 'tether --bt-connection'.\n"
+msgid "No calls. Check 'tether bt connection'.\n"
+msgstr "Geen oproepen. Controleer 'tether bt connection'.\n"
 
 #: src/cli/main.cpp
 msgid "withheld"
@@ -679,8 +747,8 @@ msgstr "Kon de meldingen niet van de daemon lezen.\n"
 
 #: src/cli/main.cpp
 #, c-format
-msgid "No notifications yet. Check 'tether --bt-connection'.\n"
-msgstr "Nog geen meldingen. Controleer 'tether --bt-connection'.\n"
+msgid "No notifications yet. Check 'tether bt connection'.\n"
+msgstr "Nog geen meldingen. Controleer 'tether bt connection'.\n"
 
 #: src/cli/main.cpp
 msgid "Could not read conversations from the daemon.\n"
@@ -688,8 +756,8 @@ msgstr "Kon de gesprekken niet van de daemon lezen.\n"
 
 #: src/cli/main.cpp
 #, c-format
-msgid "No conversations yet. Check 'tether --bt-connection'.\n"
-msgstr "Nog geen gesprekken. Controleer 'tether --bt-connection'.\n"
+msgid "No conversations yet. Check 'tether bt connection'.\n"
+msgstr "Nog geen gesprekken. Controleer 'tether bt connection'.\n"
 
 #: src/cli/main.cpp
 #, c++-format
@@ -698,16 +766,10 @@ msgid_plural "({} unread)"
 msgstr[0] "({} ongelezen)"
 msgstr[1] "({} ongelezen)"
 
-#: src/cli/main.cpp src/gtk/devices_view.cpp
+#: src/cli/main.cpp
 #, c++-format
-msgid ""
-"The running tetherd is {}, but this is tether {}. Stop it and it\n"
-"restarts on demand:\n"
-"    pkill tetherd\n"
-msgstr ""
-"De draaiende tetherd is {}, maar dit is tether {}. Stop hem; hij start "
-"vanzelf opnieuw wanneer nodig:\n"
-"    pkill tetherd\n"
+msgid "The running tetherd is {}, but this is tether {}. {}\n"
+msgstr "De draaiende tetherd is {}, maar dit is tether {}. {}\n"
 
 #: src/cli/main.cpp src/gtk/devices_view.cpp
 msgid "an older build"
@@ -719,8 +781,8 @@ msgstr "Kon de contacten niet van de daemon lezen.\n"
 
 #: src/cli/main.cpp
 #, c-format
-msgid "No contacts yet. Check 'tether --bt-connection'.\n"
-msgstr "Nog geen contacten. Controleer 'tether --bt-connection'.\n"
+msgid "No contacts yet. Check 'tether bt connection'.\n"
+msgstr "Nog geen contacten. Controleer 'tether bt connection'.\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -773,7 +835,7 @@ msgstr "Daemon"
 msgid "running"
 msgstr "actief"
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gtk/settings_view.cpp
 msgid "Clipboard"
 msgstr "Klembord"
 
@@ -829,10 +891,10 @@ msgstr "Onlangs ontvangen:"
 #, c-format
 msgid ""
 "\n"
-"Run 'tether --pending' to see what is waiting to be accepted.\n"
+"Run 'tether pending' to see what is waiting to be accepted.\n"
 msgstr ""
 "\n"
-"Voer 'tether --pending' uit om te zien wat op acceptatie wacht.\n"
+"Voer 'tether pending' uit om te zien wat op acceptatie wacht.\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -843,10 +905,12 @@ msgstr "Er wachten geen koppelingsverzoeken.\n"
 #, c-format
 msgid ""
 "\n"
-"Accept one with: tether --accept <fingerprint>\n"
+"Accept one with: tether accept <fingerprint>\n"
+"Turn one down with: tether reject <fingerprint>\n"
 msgstr ""
 "\n"
-"Accepteer er een met: tether --accept <fingerprint>\n"
+"Accepteer er een met: tether accept <fingerprint>\n"
+"Weiger er een met: tether reject <fingerprint>\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -905,6 +969,14 @@ msgstr ""
 "Voer 'systemctl --user daemon-reload' uit om hem te vergeten.\n"
 
 #: src/cli/main.cpp
+msgid "Run 'tether --help'."
+msgstr "Voer 'tether --help' uit."
+
+#: src/cli/main.cpp
+msgid "tether: 'bt' needs a name, e.g. tether bt setup"
+msgstr "tether: 'bt' heeft een naam nodig, bijv. tether bt setup"
+
+#: src/cli/main.cpp
 msgid "--port expects a number.\n"
 msgstr "--port verwacht een getal.\n"
 
@@ -912,13 +984,33 @@ msgstr "--port verwacht een getal.\n"
 msgid "--timeout expects a number in milliseconds.\n"
 msgstr "--timeout verwacht een getal in milliseconden.\n"
 
+#. TRANSLATORS: {} is the argument as typed.
 #: src/cli/main.cpp
-msgid "Unknown action. Run tether --help for options\n"
-msgstr "Onbekende actie. Voer tether --help uit voor de opties\n"
+#, c++-format
+msgid "tether: unknown option '{}'"
+msgstr "tether: onbekende optie '{}'"
 
 #: src/cli/main.cpp
-msgid "  No tetherd instances found.\n"
-msgstr "  Geen tetherd-instanties gevonden.\n"
+#, c++-format
+msgid "tether: unknown command '{}'"
+msgstr "tether: onbekende opdracht '{}'"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "tether: unexpected argument '{}'"
+msgstr "tether: onverwacht argument '{}'"
+
+#: src/cli/main.cpp
+msgid "tether: no command given"
+msgstr "tether: geen opdracht opgegeven"
+
+#: src/cli/main.cpp
+msgid "Scanning for tetherd instances on the local network..."
+msgstr "Zoeken naar tetherd-instanties op het lokale netwerk..."
+
+#: src/cli/main.cpp
+msgid "  No tetherd instances found."
+msgstr "  Geen tetherd-instanties gevonden."
 
 #: src/cli/main.cpp
 msgid "[new]"
@@ -936,31 +1028,35 @@ msgstr[0] "%zu apparaat gevonden in %.1fs\n"
 msgstr[1] "%zu apparaten gevonden in %.1fs\n"
 
 #: src/cli/main.cpp
-msgid ""
-"The daemon is not running, and could not be started. Check the log in "
-"$XDG_STATE_HOME/tether, or start it with 'systemctl --user start "
-"tetherd.service'.\n"
-msgstr ""
-"De daemon draait niet en kon niet worden gestart. Bekijk het logboek in "
-"$XDG_STATE_HOME/tether, of start hem met 'systemctl --user start "
-"tetherd.service'.\n"
+#, c++-format
+msgid "No daemon answered at {}:{}."
+msgstr "Geen daemon antwoordde op {}:{}."
+
+#: src/cli/main.cpp
+msgid "tether: accept needs a fingerprint, see 'tether pending'"
+msgstr "tether: accept heeft een vingerafdruk nodig, zie 'tether pending'"
 
 #: src/cli/main.cpp
 #, c++-format
-msgid "No daemon answered at {}:{}.\n"
-msgstr "Geen daemon antwoordde op {}:{}.\n"
+msgid "Paired {}."
+msgstr "Gekoppeld met {}."
 
 #: src/cli/main.cpp
-msgid ""
-"Explicit framework connection locally rejected! Did you target explicitly "
-"invalid TLS or is daemon broken?\n"
-msgstr ""
-"Expliciete frameworkverbinding lokaal geweigerd! Heb je expliciet ongeldige "
-"TLS opgegeven of is de daemon stuk?\n"
+msgid "tether: reject needs a fingerprint, see 'tether pending'"
+msgstr "tether: reject heeft een vingerafdruk nodig, zie 'tether pending'"
 
 #: src/cli/main.cpp
-msgid "--forget expects a fingerprint.\n"
-msgstr "--forget verwacht een vingerafdruk.\n"
+msgid "No pairing request from that fingerprint is waiting.\n"
+msgstr "Er wacht geen koppelverzoek van die vingerafdruk.\n"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Rejected {}."
+msgstr "{} geweigerd."
+
+#: src/cli/main.cpp
+msgid "tether: forget needs a fingerprint, see 'tether devices'"
+msgstr "tether: forget heeft een vingerafdruk nodig, zie 'tether devices'"
 
 #: src/cli/main.cpp
 msgid "No paired device with that fingerprint.\n"
@@ -968,12 +1064,72 @@ msgstr "Geen gekoppeld apparaat met die vingerafdruk.\n"
 
 #: src/cli/main.cpp
 #, c++-format
+msgid "Forgot {}."
+msgstr "{} vergeten."
+
+#: src/cli/main.cpp
+msgid "tether: send needs a file path"
+msgstr "tether: send heeft een bestandspad nodig"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Sending {}..."
+msgstr "{} versturen..."
+
+#: src/cli/main.cpp
+#, c++-format
 msgid "Transfer Failed: {}"
 msgstr "Overdracht mislukt: {}"
 
 #: src/cli/main.cpp
-msgid "A number is required, e.g. --bt-call +15551234567\n"
-msgstr "Een nummer is vereist, bijv. --bt-call +15551234567\n"
+msgid "File transfer delivered."
+msgstr "Bestand afgeleverd."
+
+#: src/cli/main.cpp
+msgid "Clipboard sync is on: what you copy here goes to the iPhone."
+msgstr ""
+"Klembordsynchronisatie staat aan: wat je hier kopieert, gaat naar de iPhone."
+
+#: src/cli/main.cpp
+msgid "Clipboard sync is paused: nothing copied here leaves this computer."
+msgstr ""
+"Klembordsynchronisatie is gepauzeerd: niets wat je hier kopieert, verlaat "
+"deze computer."
+
+#: src/cli/main.cpp
+msgid "tether: clipboard takes on, off or status"
+msgstr "tether: clipboard verwacht on, off of status"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Clipboard sync: {}"
+msgstr "Klembordsynchronisatie: {}"
+
+#: src/cli/main.cpp
+msgid "on"
+msgstr "aan"
+
+#: src/cli/main.cpp
+msgid "off"
+msgstr "uit"
+
+#: src/cli/main.cpp
+msgid "No iPhone app is muted."
+msgstr "Er is geen iPhone-app gedempt."
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Desktop popups from {} are muted."
+msgstr "Bureaubladmeldingen van {} zijn gedempt."
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Desktop popups from {} are back."
+msgstr "Bureaubladmeldingen van {} worden weer getoond."
+
+#: src/cli/main.cpp
+msgid "A number is required, e.g. tether bt call +15551234567"
+msgstr "Een nummer is vereist, bijv. tether bt call +15551234567"
 
 #: src/cli/main.cpp
 msgid "Dialing."
@@ -996,8 +1152,8 @@ msgid "Hanging up."
 msgstr "Wordt opgehangen."
 
 #: src/cli/main.cpp
-msgid "Expected on or off, e.g. --bt-calls-enable on\n"
-msgstr "on of off verwacht, bijv. --bt-calls-enable on\n"
+msgid "Expected on or off, e.g. tether bt calls-enable on"
+msgstr "on of off verwacht, bijv. tether bt calls-enable on"
 
 #: src/cli/main.cpp
 msgid "Call control enabled."
@@ -1008,45 +1164,44 @@ msgid "Call control disabled."
 msgstr "Oproepbediening uitgeschakeld."
 
 #: src/cli/main.cpp
-msgid "A thread key is required, e.g. --bt-messages tel:+15551234567\n"
-msgstr "Een gesprekssleutel is vereist, bijv. --bt-messages tel:+15551234567\n"
+msgid "A thread key is required, e.g. tether bt messages tel:+15551234567"
+msgstr ""
+"Een gesprekssleutel is vereist, bijv. tether bt messages tel:+15551234567"
 
 #: src/cli/main.cpp
 msgid ""
-"A conversation and a message are required, e.g. --bt-send tel:+15551234567 "
-"\"hi\"\n"
+"A conversation and a message are required, e.g. tether bt send tel:"
+"+15551234567 \"hi\""
 msgstr ""
-"Een gesprek en een bericht zijn vereist, bijv. --bt-send tel:+15551234567 "
-"\"hoi\"\n"
+"Een gesprek en een bericht zijn vereist, bijv. tether bt send tel:"
+"+15551234567 \"hoi\""
 
 #: src/cli/main.cpp
-msgid "A Bluetooth address is required, e.g. --bt-pair AA:BB:CC:DD:EE:FF\n"
-msgstr "Een Bluetooth-adres is vereist, bijv. --bt-pair AA:BB:CC:DD:EE:FF\n"
+msgid "A Bluetooth address is required, e.g. tether bt pair AA:BB:CC:DD:EE:FF"
+msgstr "Een Bluetooth-adres is vereist, bijv. tether bt pair AA:BB:CC:DD:EE:FF"
 
 #: src/cli/main.cpp
-msgid "Expected on or off, e.g. --bt-enable off\n"
-msgstr "on of off verwacht, bijv. --bt-enable off\n"
+msgid "Expected on or off, e.g. tether bt enable off"
+msgstr "on of off verwacht, bijv. tether bt enable off"
 
 #: src/cli/main.cpp
-#, c-format
-msgid "Bluetooth enabled.\n"
-msgstr "Bluetooth ingeschakeld.\n"
+msgid "Bluetooth enabled."
+msgstr "Bluetooth ingeschakeld."
 
 #: src/cli/main.cpp
-#, c-format
 msgid ""
 "Bluetooth disabled. Tether will not reconnect the iPhone. A link that is\n"
-"already up stays up until you disconnect it or the phone goes out of range.\n"
+"already up stays up until you disconnect it or the phone goes out of range."
 msgstr ""
 "Bluetooth uitgeschakeld. Tether verbindt de iPhone niet opnieuw. Een "
 "verbinding\n"
-"die al actief is blijft actief tot je hem verbreekt of de telefoon buiten "
-"bereik raakt.\n"
+"die al actief is, blijft bestaan tot je hem verbreekt of de telefoon buiten "
+"bereik raakt."
 
 #: src/cli/main.cpp
 #, c++-format
-msgid "Expected on or off, e.g. {} on\n"
-msgstr "on of off verwacht, bijv. {} on\n"
+msgid "Expected on or off, e.g. tether bt {} on"
+msgstr "on of off verwacht, bijv. tether bt {} on"
 
 #: src/cli/main.cpp
 msgid "Notification contents enabled."
@@ -1065,23 +1220,25 @@ msgid "Notification mirroring disabled."
 msgstr "Spiegelen van meldingen uitgeschakeld."
 
 #: src/cli/main.cpp
-msgid "Expected encrypted, plaintext or none, e.g. --bt-retention encrypted\n"
+msgid ""
+"Expected encrypted, plaintext or none, e.g. tether bt retention encrypted"
 msgstr ""
-"Verwacht encrypted, plaintext of none, bijv. --bt-retention encrypted\n"
+"encrypted, plaintext of none verwacht, bijv. tether bt retention encrypted"
 
 #: src/cli/main.cpp
-#, c-format
-msgid "Deleting stored messages and contacts.\n"
-msgstr "Opgeslagen berichten en contacten worden verwijderd.\n"
+msgid "Deleting stored messages and contacts."
+msgstr "Opgeslagen berichten en contacten worden verwijderd."
 
 #: src/cli/main.cpp
-#, c-format
-msgid "Retention set to %s.\n"
-msgstr "Bewaren ingesteld op %s.\n"
+#, c++-format
+msgid "Retention set to {}."
+msgstr "Bewaren ingesteld op {}."
 
 #: src/cli/main.cpp
-msgid "Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"
-msgstr "Adapter verwacht, bijv. --bt-adapter hci1, of --bt-adapter auto\n"
+msgid ""
+"Expected a controller, e.g. tether bt adapter hci1, or tether bt adapter auto"
+msgstr ""
+"Adapter verwacht, bijv. tether bt adapter hci1, of tether bt adapter auto"
 
 #: src/cli/main.cpp
 #, c++-format
@@ -1089,9 +1246,8 @@ msgid "No Bluetooth controller matches '{}'. Available:\n"
 msgstr "Geen Bluetooth-adapter komt overeen met '{}'. Beschikbaar:\n"
 
 #: src/cli/main.cpp
-#, c-format
-msgid "Controller selection is automatic: the first powered one.\n"
-msgstr "Adapterkeuze is automatisch: de eerste ingeschakelde.\n"
+msgid "Controller selection is automatic: the first powered one."
+msgstr "Adapterkeuze is automatisch: de eerste ingeschakelde."
 
 #: src/cli/main.cpp
 #, c++-format
@@ -1424,6 +1580,7 @@ msgid "Confirm"
 msgstr "Bevestigen"
 
 #: src/core/src/bluetooth/pairing.cpp src/gtk/messages_view.cpp
+#: src/gtk/settings_view.cpp
 msgid "Cancel"
 msgstr "Annuleren"
 
@@ -1479,7 +1636,8 @@ msgstr "Het koppelen is niet voltooid. Bevestig de melding op de iPhone."
 msgid "Pairing failed: {}"
 msgstr "Koppelen mislukt: {}"
 
-#: src/core/src/bluetooth/pairing.cpp
+#. TRANSLATORS: {} is a device name.
+#: src/core/src/bluetooth/pairing.cpp src/gtk/devices_view.cpp
 #, c++-format
 msgid "Paired with {}."
 msgstr "Gekoppeld met {}."
@@ -1714,7 +1872,8 @@ msgstr "Versturen mislukt: {}"
 msgid "unknown error"
 msgstr "onbekende fout"
 
-#: src/core/src/net.cpp src/gtk/devices_view.cpp src/gtk/messages_view.cpp
+#: src/core/src/net.cpp src/gtk/calls_view.cpp src/gtk/devices_view.cpp
+#: src/gtk/messages_view.cpp
 msgid "Could not reach the Tether daemon."
 msgstr "Kon de Tether-daemon niet bereiken."
 
@@ -1728,13 +1887,83 @@ msgstr "{0} ({1}) wil met dit apparaat koppelen."
 msgid "Pairing Request"
 msgstr "Koppelverzoek"
 
-#: src/core/src/net.cpp
+#: src/core/src/net.cpp src/daemon/main.cpp src/gtk/devices_view.cpp
 msgid "Accept"
 msgstr "Accepteren"
 
-#: src/core/src/net.cpp
+#: src/core/src/net.cpp src/daemon/main.cpp src/gtk/devices_view.cpp
 msgid "Reject"
 msgstr "Weigeren"
+
+#: src/daemon/main.cpp
+#, c++-format
+msgid "Details: {}"
+msgstr "Details: {}"
+
+#: src/daemon/main.cpp
+msgid "Tether could not start"
+msgstr "Tether kon niet starten"
+
+#: src/daemon/main.cpp
+msgid ""
+"Its TLS identity could not be created or read. Check ~/.config/tether/"
+"cert.pem and key.pem, or move them away to make new ones."
+msgstr ""
+"De TLS-identiteit kon niet worden aangemaakt of gelezen. Controleer "
+"~/.config/tether/cert.pem en key.pem, of verplaats ze om nieuwe te laten "
+"maken."
+
+#: src/daemon/main.cpp
+msgid ""
+"Its command socket could not be created under $XDG_RUNTIME_DIR. Is another "
+"tetherd running, or the runtime directory missing?"
+msgstr ""
+"De opdrachtsocket kon niet worden aangemaakt onder $XDG_RUNTIME_DIR. Draait "
+"er al een andere tetherd, of ontbreekt de runtime-map?"
+
+#: src/daemon/main.cpp
+msgid ""
+"Port 5134 is already in use, so the iPhone cannot connect. Another tetherd, "
+"or another program, holds it. Find it with: ss -ltnp 'sport = :5134'"
+msgstr ""
+"Poort 5134 is al in gebruik, dus de iPhone kan niet verbinden. Een andere "
+"tetherd of een ander programma houdt hem bezet. Zoek het op met: ss -ltnp "
+"'sport = :5134'"
+
+#: src/daemon/main.cpp
+msgid "Clipboard sync is off"
+msgstr "Klembordsynchronisatie staat uit"
+
+#: src/daemon/main.cpp
+msgid ""
+"This compositor does not offer the data-control protocol Tether needs, so "
+"the clipboard will not follow the iPhone. Files, messages and notifications "
+"still work."
+msgstr ""
+"Deze compositor biedt het data-control-protocol dat Tether nodig heeft niet "
+"aan, dus het klembord volgt de iPhone niet. Bestanden, berichten en "
+"meldingen werken wel."
+
+#: src/daemon/main.cpp
+msgid "Pairing request waiting"
+msgstr "Koppelverzoek wacht"
+
+#: src/daemon/main.cpp
+#, c++-format
+msgid ""
+"{} asked to pair with this computer and the prompt timed out. It stays "
+"pending for an hour; answer here or in the Devices tab."
+msgstr ""
+"{} vroeg om te koppelen met deze computer en de vraag is verlopen. Het "
+"verzoek blijft een uur openstaan; beantwoord het hier of op het tabblad "
+"Apparaten."
+
+#: src/daemon/main.cpp
+#, c++-format
+msgid "{} asked to pair with this computer. Answer here or in the Devices tab."
+msgstr ""
+"{} vraagt om te koppelen met deze computer. Beantwoord het hier of op het "
+"tabblad Apparaten."
 
 #: src/daemon/main.cpp
 msgid "This PC can't be discovered"
@@ -1747,6 +1976,18 @@ msgid ""
 msgstr ""
 "avahi-daemon draait niet, dus Tether kan zichzelf niet op het netwerk "
 "aankondigen. Start het met: sudo systemctl enable --now avahi-daemon"
+
+#: src/daemon/main.cpp
+msgid "Bluetooth is unavailable"
+msgstr "Bluetooth is niet beschikbaar"
+
+#: src/daemon/main.cpp
+msgid ""
+"bluetoothd could not be reached, so messages, contacts and notifications "
+"from the iPhone are off until it is. Check: systemctl status bluetooth"
+msgstr ""
+"bluetoothd was niet bereikbaar, dus berichten, contacten en meldingen van de "
+"iPhone staan uit tot dat wel zo is. Controleer: systemctl status bluetooth"
 
 #: src/daemon/notification.cpp
 msgid "File arrived"
@@ -1761,6 +2002,13 @@ msgid "Open Folder"
 msgstr "Map openen"
 
 #: src/daemon/notification.cpp
+#, c++-format
+msgid "{} more notification"
+msgid_plural "{} more notifications"
+msgstr[0] "Nog {} melding"
+msgstr[1] "Nog {} meldingen"
+
+#: src/daemon/notification.cpp
 msgid "Reply"
 msgstr "Antwoorden"
 
@@ -1772,6 +2020,12 @@ msgstr "Code kopiëren"
 #, c++-format
 msgid "Open in {}"
 msgstr "Openen in {}"
+
+#. TRANSLATORS: {} is an iPhone app name. Silences its popups on this computer.
+#: src/daemon/notification.cpp
+#, c++-format
+msgid "Mute {}"
+msgstr "{} dempen"
 
 #: src/gtk/calls_view.cpp
 msgid "Incoming"
@@ -1837,21 +2091,29 @@ msgstr "Weigeren"
 msgid "Hang up"
 msgstr "Ophangen"
 
+#. TRANSLATORS: {} is a phone number.
+#: src/gtk/calls_view.cpp
+#, c++-format
+msgid "Calling {}…"
+msgstr "{} bellen…"
+
 #: src/gtk/calls_view.cpp
 msgid "No calls."
 msgstr "Geen oproepen."
 
 #: src/gtk/calls_view.cpp
-msgid "Call control is off. Turn it on with 'tether --bt-calls-enable on'."
+msgid ""
+"Call control is off. Turn it on under Settings > Experimental > Call control "
+"over Bluetooth."
 msgstr ""
-"De oproepbediening staat uit. Schakel deze in met 'tether --bt-calls-enable "
-"on'."
+"Oproepbediening staat uit. Schakel deze in onder Instellingen > "
+"Experimenteel > Oproepbediening via Bluetooth."
 
 #: src/gtk/calls_view.cpp
 msgid "Number to call"
 msgstr "Te bellen nummer"
 
-#: src/gtk/calls_view.cpp
+#: src/gtk/calls_view.cpp src/gtk/contacts_view.cpp
 msgid "Call"
 msgstr "Bellen"
 
@@ -1885,6 +2147,16 @@ msgid "Message {}"
 msgstr "Bericht aan {}"
 
 #: src/gtk/contacts_view.cpp
+msgid "Call (turn on call control under Settings > Experimental)"
+msgstr "Bellen (schakel oproepbediening in onder Instellingen > Experimenteel)"
+
+#. TRANSLATORS: Spoken name of the call button beside a phone number.
+#: src/gtk/contacts_view.cpp
+#, c++-format
+msgid "Call {}"
+msgstr "{} bellen"
+
+#: src/gtk/contacts_view.cpp
 msgid "No contacts yet. Check the Bluetooth link on the Devices page."
 msgstr ""
 "Nog geen contacten. Controleer de Bluetooth-verbinding op de pagina "
@@ -1903,8 +2175,52 @@ msgid "The Tether daemon is not running."
 msgstr "De Tether-daemon draait niet."
 
 #: src/gtk/daemon_client.cpp
+msgid "The Tether daemon went away. Reconnecting…"
+msgstr "De Tether-daemon is weggevallen. Opnieuw verbinden…"
+
+#: src/gtk/daemon_client.cpp
 msgid "Daemon Online"
 msgstr "Daemon online"
+
+#: src/gtk/devices_view.cpp
+msgid "Looking for the iPhone nearby…"
+msgstr "Zoeken naar de iPhone in de buurt…"
+
+#: src/gtk/devices_view.cpp
+msgid "Looking for the iPhone again…"
+msgstr "Opnieuw zoeken naar de iPhone…"
+
+#. TRANSLATORS: {} is a device name.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "Connecting to {}…"
+msgstr "Verbinden met {}…"
+
+#. TRANSLATORS: {} is a device name.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "Pairing with {}… Confirm on the iPhone when it asks."
+msgstr "Koppelen met {}… Bevestig op de iPhone wanneer die erom vraagt."
+
+#. TRANSLATORS: {} is a six-digit code.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "Check that both devices show the code {}."
+msgstr "Controleer of beide apparaten de code {} tonen."
+
+#: src/gtk/devices_view.cpp
+msgid "Waiting for the link to settle…"
+msgstr "Wachten tot de verbinding stabiel is…"
+
+#: src/gtk/devices_view.cpp
+msgid "The iPhone refused the connection. Trying once more…"
+msgstr "De iPhone heeft de verbinding geweigerd. Nog één poging…"
+
+#. TRANSLATORS: {} is a device name.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "{} is already paired."
+msgstr "{} is al gekoppeld."
 
 #. TRANSLATORS: Left earbud, read aloud by screen readers before its battery level.
 #: src/gtk/devices_view.cpp
@@ -2018,6 +2334,11 @@ msgid "This machine cannot carry the Bluetooth features."
 msgstr "Deze machine kan de Bluetooth-functies niet dragen."
 
 #: src/gtk/devices_view.cpp
+#, c++-format
+msgid "The running tetherd is {}, but this is tether {}. {}"
+msgstr "De draaiende tetherd is {}, maar dit is tether {}. {}"
+
+#: src/gtk/devices_view.cpp
 msgid "Link"
 msgstr "Verbinding"
 
@@ -2042,6 +2363,10 @@ msgid "Device is offline. Make sure it is switched on and on the same network."
 msgstr ""
 "Het apparaat is offline. Controleer of het aanstaat en op hetzelfde netwerk "
 "zit."
+
+#: src/gtk/devices_view.cpp
+msgid "This device asked to pair with this computer."
+msgstr "Dit apparaat vraagt om te koppelen met deze computer."
 
 #: src/gtk/devices_view.cpp
 #, c++-format
@@ -2111,8 +2436,16 @@ msgid "({0} of {1})"
 msgstr "({0} van {1})"
 
 #: src/gtk/devices_view.cpp
+msgid "Could not reach the Tether daemon; nothing was sent."
+msgstr "Kon de Tether-daemon niet bereiken; er is niets verstuurd."
+
+#: src/gtk/devices_view.cpp
 msgid "Daemon unavailable."
 msgstr "Daemon niet beschikbaar."
+
+#: src/gtk/devices_view.cpp
+msgid "The Tether daemon is not running, so nothing was sent."
+msgstr "De Tether-daemon draait niet, dus er is niets verstuurd."
 
 #: src/gtk/devices_view.cpp
 msgid "Send File"
@@ -2195,6 +2528,12 @@ msgstr "Gekoppeld"
 msgid "Waiting for approval on {0}..."
 msgstr "Wachten op goedkeuring op {0}…"
 
+#. TRANSLATORS: {} is a device name.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "Rejected the pairing request from {}."
+msgstr "Het koppelverzoek van {} is geweigerd."
+
 #: src/gtk/devices_view.cpp
 msgid ""
 "Could not reach that device. If a firewall is running, Tether needs inbound "
@@ -2219,9 +2558,25 @@ msgstr "Kon geen verbinding maken met dat apparaat."
 msgid "Pair request was rejected."
 msgstr "Het koppelverzoek is geweigerd."
 
+#. TRANSLATORS: {} is a device name.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "{} wants to pair. Accept or reject it above."
+msgstr "{} wil koppelen. Accepteer of weiger het hierboven."
+
 #: src/gtk/devices_view.cpp
 msgid "Ready"
 msgstr "Gereed"
+
+#. TRANSLATORS: {0} is a file name, {1} a percentage.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "Sending {0}… {1}%"
+msgstr "{0} versturen… {1}%"
+
+#: src/gtk/devices_view.cpp
+msgid "Send failed."
+msgstr "Versturen mislukt."
 
 #: src/gtk/devices_view.cpp
 #, c++-format
@@ -2242,8 +2597,12 @@ msgid "Clipboard is empty."
 msgstr "Het klembord is leeg."
 
 #: src/gtk/devices_view.cpp
-msgid "Desktop Clipboard Sync triggered."
-msgstr "Klembordsynchronisatie van het bureaublad gestart."
+msgid "Clipboard sent to the iPhone."
+msgstr "Klembord naar de iPhone verstuurd."
+
+#: src/gtk/devices_view.cpp
+msgid "The clipboard is empty; nothing to send."
+msgstr "Het klembord is leeg; niets te versturen."
 
 #: src/gtk/devices_view.cpp
 msgid "Messages and notifications are connected."
@@ -2267,6 +2626,10 @@ msgstr ""
 "Toont de iPhone deze code?\n"
 "\n"
 "%s"
+
+#: src/gtk/devices_view.cpp
+msgid "The AirPods did not connect."
+msgstr "De AirPods hebben geen verbinding gemaakt."
 
 #: src/gtk/devices_view.cpp
 msgid "Connect your iPhone"
@@ -2422,10 +2785,6 @@ msgid "Pair Device"
 msgstr "Apparaat koppelen"
 
 #: src/gtk/devices_view.cpp
-msgid "Force Trust (Accept Pending)"
-msgstr "Vertrouwen forceren (openstaande accepteren)"
-
-#: src/gtk/devices_view.cpp
 msgid "Drop files here to send"
 msgstr "Sleep hier bestanden om te versturen"
 
@@ -2454,8 +2813,18 @@ msgid "Main menu"
 msgstr "Hoofdmenu"
 
 #: src/gtk/main.cpp
+msgid "No system tray was found, so the window is shown instead."
+msgstr ""
+"Er is geen systeemvak gevonden, dus wordt in plaats daarvan het venster "
+"getoond."
+
+#: src/gtk/main.cpp
 msgid "Look for devices"
 msgstr "Apparaten zoeken"
+
+#: src/gtk/main.cpp
+msgid "Scanning for devices…"
+msgstr "Zoeken naar apparaten…"
 
 #: src/gtk/main.cpp
 msgid "Devices"
@@ -2513,11 +2882,31 @@ msgstr[1] "{} ongelezen berichten"
 msgid "Sent: {}"
 msgstr "Verzonden: {}"
 
-#. TRANSLATORS: Read aloud before a message you received, {} is the message.
+#. TRANSLATORS: Read aloud before a message you received, {0} is the sender, {1}
+#. the message.
+#: src/gtk/messages_view.cpp
+#, c++-format
+msgid "Received from {0}: {1}"
+msgstr "Ontvangen van {0}: {1}"
+
+#. TRANSLATORS: Read aloud before a message you received, {} is
+#. the message.
 #: src/gtk/messages_view.cpp
 #, c++-format
 msgid "Received: {}"
 msgstr "Ontvangen: {}"
+
+#: src/gtk/messages_view.cpp
+msgid "Sending…"
+msgstr "Versturen…"
+
+#: src/gtk/messages_view.cpp
+msgid "Not sent."
+msgstr "Niet verstuurd."
+
+#: src/gtk/messages_view.cpp
+msgid "Retry"
+msgstr "Opnieuw proberen"
 
 #: src/gtk/messages_view.cpp
 msgid "Bluetooth connection needed to sync messages."
@@ -2526,10 +2915,6 @@ msgstr "Er is een Bluetooth-verbinding nodig om berichten te synchroniseren."
 #: src/gtk/messages_view.cpp
 msgid "Select a conversation"
 msgstr "Selecteer een gesprek"
-
-#: src/gtk/messages_view.cpp
-msgid "Sending…"
-msgstr "Versturen…"
 
 #: src/gtk/messages_view.cpp
 msgid "Enter a recipient."
@@ -2546,6 +2931,10 @@ msgstr "Antwoorden in dit gesprek is niet beschikbaar."
 #: src/gtk/messages_view.cpp
 msgid "No answer about that message; it may still have been sent."
 msgstr "Geen antwoord over dat bericht; het is mogelijk toch verstuurd."
+
+#: src/gtk/messages_view.cpp
+msgid "No answer from the phone."
+msgstr "Geen antwoord van de telefoon."
 
 #: src/gtk/messages_view.cpp
 msgid "Could not reach the Tether daemon; the message was not sent."
@@ -2575,10 +2964,6 @@ msgstr "Telefoonnummer of e-mailadres"
 msgid "Send"
 msgstr "Versturen"
 
-#: src/gtk/messages_view.cpp
-msgid "Retry"
-msgstr "Opnieuw proberen"
-
 #: src/gtk/notifications_view.cpp
 msgid "Dismiss on the iPhone"
 msgstr "Sluiten op de iPhone"
@@ -2604,6 +2989,32 @@ msgstr "Nog geen meldingen."
 #: src/gtk/notifications_view.cpp
 msgid "Notification mirroring is unavailable."
 msgstr "Het spiegelen van meldingen is niet beschikbaar."
+
+#: src/gtk/settings_view.cpp
+msgid "The Tether daemon is not running, so this setting was not changed."
+msgstr "De Tether-daemon draait niet, dus deze instelling is niet gewijzigd."
+
+#: src/gtk/settings_view.cpp
+msgid "Delete the stored message history?"
+msgstr "De opgeslagen berichtgeschiedenis verwijderen?"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Messages and contacts already saved on this computer are deleted right away. "
+"The phone keeps its own copy, and conversations are re-read from it while "
+"connected."
+msgstr ""
+"Berichten en contacten die al op deze computer zijn opgeslagen, worden "
+"meteen verwijderd. De telefoon houdt zijn eigen kopie, en gesprekken worden "
+"daar opnieuw van gelezen zolang er verbinding is."
+
+#: src/gtk/settings_view.cpp
+msgid "Delete history"
+msgstr "Geschiedenis verwijderen"
+
+#: src/gtk/settings_view.cpp
+msgid "Unmute"
+msgstr "Dempen opheffen"
 
 #: src/gtk/settings_view.cpp
 msgid ""
@@ -2643,6 +3054,23 @@ msgid ""
 msgstr ""
 "Symbolisch volgt de kleur van het paneel. Wordt van kracht bij de volgende "
 "start van Tether."
+
+#: src/gtk/settings_view.cpp
+msgid "Over Wi-Fi, what is copied here goes to the iPhone and back."
+msgstr "Via wifi gaat wat hier wordt gekopieerd naar de iPhone en terug."
+
+#: src/gtk/settings_view.cpp
+msgid "Sync the clipboard automatically"
+msgstr "Klembord automatisch synchroniseren"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Off pauses it both ways; Send Clipboard on the Devices page still works. "
+"Copies a password manager marks as sensitive are never sent."
+msgstr ""
+"Uit pauzeert het in beide richtingen; Klembord versturen op de pagina "
+"Apparaten werkt nog wel. Kopieën die een wachtwoordbeheerder als gevoelig "
+"markeert, worden nooit verstuurd."
 
 #: src/gtk/settings_view.cpp
 msgid "iPhone notifications"
@@ -2687,11 +3115,28 @@ msgstr ""
 
 #: src/gtk/settings_view.cpp
 msgid "Show message previews"
-msgstr "Berichtvoorbeeld tonen"
+msgstr "Berichtvoorbeelden tonen"
 
 #: src/gtk/settings_view.cpp
 msgid "Off shows only the sender."
 msgstr "Uit toont alleen de afzender."
+
+#: src/gtk/settings_view.cpp
+msgid "Muted apps"
+msgstr "Gedempte apps"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"iPhone apps whose alerts show no popup here. They still appear on the "
+"Notifications tab. Mute one from its popup."
+msgstr ""
+"iPhone-apps waarvan de meldingen hier geen bureaubladmelding tonen. Ze "
+"verschijnen nog wel op het tabblad Meldingen. Demp een app vanuit zijn "
+"melding."
+
+#: src/gtk/settings_view.cpp
+msgid "No apps are muted."
+msgstr "Er zijn geen apps gedempt."
 
 #: src/gtk/settings_view.cpp
 msgid "Security"
@@ -2765,6 +3210,26 @@ msgstr "Oproepbediening via Bluetooth"
 msgid "Answer and place calls from the Calls tab."
 msgstr "Beantwoord en start oproepen vanaf het tabblad Oproepen."
 
+#: src/gtk/tray.cpp
+msgid "Hide Tether"
+msgstr "Tether verbergen"
+
+#: src/gtk/tray.cpp
+msgid "Show Tether"
+msgstr "Tether tonen"
+
+#: src/gtk/tray.cpp
+msgid "Sync clipboard with iPhone"
+msgstr "Klembord synchroniseren met iPhone"
+
+#: src/gtk/tray.cpp
+msgid "Settings…"
+msgstr "Instellingen…"
+
+#: src/gtk/tray.cpp
+msgid "Quit Tether"
+msgstr "Tether afsluiten"
+
 #: src/gtk/tray.cpp src/gtk/ui_util.cpp
 msgid "connected"
 msgstr "verbonden"
@@ -2784,6 +3249,17 @@ msgstr "{}: {}"
 msgid "Daemon: not running"
 msgstr "Daemon: draait niet"
 
+#: src/gtk/tray.cpp
+#, c++-format
+msgid "{} pairing request waiting"
+msgid_plural "{} pairing requests waiting"
+msgstr[0] "{} koppelverzoek wacht"
+msgstr[1] "{} koppelverzoeken wachten"
+
+#: src/gtk/tray.cpp
+msgid "Clipboard sync paused"
+msgstr "Klembordsynchronisatie gepauzeerd"
+
 #: src/gtk/ui_util.cpp
 msgid "Waiting for the Tether daemon."
 msgstr "Wachten op de Tether-daemon."
@@ -2799,6 +3275,39 @@ msgstr "Apparaten koppelen en het klembord over het netwerk synchroniseren"
 #: src/gtk/tether-gtk.desktop.in
 msgid "iPhone;iOS;SMS;Messages;Clipboard;Files;Notifications;Calls;AirPods;"
 msgstr "iPhone;iOS;SMS;Berichten;Klembord;Bestanden;Meldingen;Gesprekken;AirPods;"
+
+#~ msgid "Unknown action. Run tether --help for options\n"
+#~ msgstr "Onbekende actie. Voer tether --help uit voor de opties\n"
+
+#~ msgid ""
+#~ "The daemon is not running, and could not be started. Check the log in "
+#~ "$XDG_STATE_HOME/tether, or start it with 'systemctl --user start "
+#~ "tetherd.service'.\n"
+#~ msgstr ""
+#~ "De daemon draait niet en kon niet worden gestart. Bekijk het logboek in "
+#~ "$XDG_STATE_HOME/tether, of start hem met 'systemctl --user start "
+#~ "tetherd.service'.\n"
+
+#~ msgid ""
+#~ "Explicit framework connection locally rejected! Did you target explicitly "
+#~ "invalid TLS or is daemon broken?\n"
+#~ msgstr ""
+#~ "Expliciete frameworkverbinding lokaal geweigerd! Heb je expliciet "
+#~ "ongeldige TLS opgegeven of is de daemon stuk?\n"
+
+#~ msgid "--forget expects a fingerprint.\n"
+#~ msgstr "--forget verwacht een vingerafdruk.\n"
+
+#~ msgid "Call control is off. Turn it on with 'tether --bt-calls-enable on'."
+#~ msgstr ""
+#~ "De oproepbediening staat uit. Schakel deze in met 'tether --bt-calls-"
+#~ "enable on'."
+
+#~ msgid "Desktop Clipboard Sync triggered."
+#~ msgstr "Klembordsynchronisatie van het bureaublad gestart."
+
+#~ msgid "Force Trust (Accept Pending)"
+#~ msgstr "Vertrouwen forceren (openstaande accepteren)"
 
 #~ msgid ""
 #~ "Where messages and contacts are stored on this computer. Encrypted keeps "
@@ -2867,7 +3376,3 @@ msgstr "iPhone;iOS;SMS;Berichten;Klembord;Bestanden;Meldingen;Gesprekken;AirPods
 #, fuzzy
 #~ msgid "Tether version"
 #~ msgstr "De tether-versie tonen."
-
-#, fuzzy
-#~ msgid "on"
-#~ msgstr "Koppeling"

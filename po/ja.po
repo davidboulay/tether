@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-10-02 19:39-0700\n"
+"POT-Creation-Date: 2026-10-04 13:09+0200\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Japanese\n"
@@ -25,6 +25,36 @@ msgstr "はい"
 #: src/cli/main.cpp
 msgid "no"
 msgstr "いいえ"
+
+#: src/cli/main.cpp
+msgid "Could not reach the daemon."
+msgstr "デーモンに接続できませんでした。"
+
+#: src/cli/main.cpp
+msgid "The daemon did not answer in time."
+msgstr "デーモンが時間内に応答しませんでした。"
+
+#: src/cli/main.cpp
+msgid "The daemon closed the connection before answering."
+msgstr "デーモンが応答する前に接続を閉じました。"
+
+#: src/cli/main.cpp
+msgid "The daemon does not know this command; it may be an older tetherd."
+msgstr ""
+"デーモンがこのコマンドを認識しません。古い tetherd の可能性があります。"
+
+#: src/cli/main.cpp
+msgid "The daemon sent an unreadable reply."
+msgstr "デーモンから読み取れない応答が返されました。"
+
+#: src/cli/main.cpp
+msgid "The daemon did not confirm the change; it may be an older tetherd.\n"
+msgstr ""
+"デーモンが変更を確認しませんでした。古い tetherd の可能性があります。\n"
+
+#: src/cli/main.cpp
+msgid "The daemon did not apply the change.\n"
+msgstr "デーモンは変更を適用しませんでした。\n"
 
 #: src/cli/main.cpp
 msgid "Show this help message."
@@ -270,12 +300,45 @@ msgid "Accept a pending pairing request locally."
 msgstr "保留中のペアリング要求をローカルで承認します。"
 
 #: src/cli/main.cpp
+msgid "Turn down a pending pairing request, and tell the other device so."
+msgstr "保留中のペアリング要求を拒否し、相手のデバイスにそれを伝えます。"
+
+#: src/cli/main.cpp
 msgid "Remove a Wi-Fi pairing and drop its session."
 msgstr "Wi-Fi のペアリングを削除し、そのセッションを終了します。"
 
 #: src/cli/main.cpp
 msgid "Send a pair_request over TCP to the daemon."
 msgstr "TCP でデーモンに pair_request を送信します。"
+
+#: src/cli/main.cpp
+msgid ""
+"Pause or resume sending this computer's clipboard to the iPhone, or show "
+"which it is."
+msgstr ""
+"このコンピューターのクリップボードを iPhone へ送るのを一時停止または再開する"
+"か、現在の状態を表示します。"
+
+#: src/cli/main.cpp
+msgid ""
+"Stop showing desktop popups from one iPhone app, named by its bundle id, or "
+"list the muted apps."
+msgstr ""
+"バンドル ID で指定した iPhone アプリのデスクトップのポップアップを表示しない"
+"ようにするか、ミュート中のアプリを一覧表示します。"
+
+#: src/cli/main.cpp
+msgid "Show desktop popups from a muted iPhone app again."
+msgstr ""
+"ミュート中の iPhone アプリのデスクトップのポップアップを再び表示します。"
+
+#: src/cli/main.cpp
+msgid ""
+"Print the daemon's reply as JSON instead of text, on the commands that read "
+"state."
+msgstr ""
+"状態を読み取るコマンドで、デーモンの応答をテキストではなく JSON で出力しま"
+"す。"
 
 #: src/cli/main.cpp
 msgid "tether - Wayland companion CLI"
@@ -296,6 +359,10 @@ msgstr "任意の --bt-<name> フラグをサブコマンドとして。"
 #: src/cli/main.cpp
 msgid "Examples:"
 msgstr "例:"
+
+#: src/cli/main.cpp
+msgid "Shell completion: tether --print-completions <bash|zsh|fish>"
+msgstr "シェル補完: tether --print-completions <bash|zsh|fish>"
 
 #: src/cli/main.cpp
 #, c-format
@@ -372,10 +439,10 @@ msgstr[0] ""
 #, c-format
 msgid ""
 "\n"
-"Re-run 'tether --bt-setup' afterwards to confirm.\n"
+"Re-run 'tether bt setup' afterwards to confirm.\n"
 msgstr ""
 "\n"
-"その後 'tether --bt-setup' をもう一度実行して確認してください。\n"
+"その後 'tether bt setup' をもう一度実行して確認してください。\n"
 
 #: src/cli/main.cpp
 msgid "Mode"
@@ -424,8 +491,8 @@ msgid "mirroring on"
 msgstr "ミラーリング有効"
 
 #: src/cli/main.cpp
-msgid "mirroring off (tether --bt-ancs on)"
-msgstr "ミラーリング無効 (tether --bt-ancs on)"
+msgid "mirroring off (tether bt ancs on)"
+msgstr "ミラーリング無効 (tether bt ancs on)"
 
 #: src/cli/main.cpp src/daemon/main.cpp src/gtk/main.cpp
 #: src/gtk/tether-gtk.desktop.in
@@ -437,8 +504,8 @@ msgid "connecting"
 msgstr "接続中"
 
 #: src/cli/main.cpp
-msgid "off (--bt-enable on)"
-msgstr "オフ (--bt-enable on)"
+msgid "off (tether bt enable on)"
+msgstr "オフ (tether bt enable on)"
 
 #: src/cli/main.cpp
 msgid "History"
@@ -447,10 +514,10 @@ msgstr "履歴"
 #: src/cli/main.cpp
 msgid ""
 "paused - the desktop keyring has no key to offer yet.\n"
-"Unlock it, or run 'tether --bt-retention plaintext'."
+"Unlock it, or run 'tether bt retention plaintext'."
 msgstr ""
 "一時停止中 - デスクトップのキーリングにまだ鍵がありません。\n"
-"ロックを解除するか、'tether --bt-retention plaintext' を実行してください。"
+"ロックを解除するか、'tether bt retention plaintext' を実行してください。"
 
 #: src/cli/main.cpp
 msgid "in use"
@@ -465,13 +532,13 @@ msgstr "アダプタ {} がありません。電源の入っている最初の�
 #, c-format
 msgid ""
 "\n"
-"%zu setup step remaining. Run: tether --bt-setup\n"
+"%zu setup step remaining. Run: tether bt setup\n"
 msgid_plural ""
 "\n"
-"%zu setup steps remaining. Run: tether --bt-setup\n"
+"%zu setup steps remaining. Run: tether bt setup\n"
 msgstr[0] ""
 "\n"
-"設定手順があと %zu 件残っています。実行: tether --bt-setup\n"
+"設定手順があと %zu 件残っています。実行: tether bt setup\n"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth devices from the daemon.\n"
@@ -521,10 +588,6 @@ msgstr ""
 "ださい。"
 
 #: src/cli/main.cpp
-msgid "Could not reach the daemon.\n"
-msgstr "デーモンに接続できませんでした。\n"
-
-#: src/cli/main.cpp
 #, c-format
 msgid "Listening mode set to %s.\n"
 msgstr "リスニングモードを %s に設定しました。\n"
@@ -538,9 +601,9 @@ msgid "Use never, one-removed or both-removed.\n"
 msgstr "never、one-removed、both-removed のいずれかを指定してください。\n"
 
 #: src/cli/main.cpp
-#, c-format
-msgid "Pause on removal set to %s.\n"
-msgstr "取り外し時の一時停止を %s に設定しました。\n"
+#, c++-format
+msgid "Pause on removal set to {}."
+msgstr "取り外し時の一時停止を {} に設定しました。"
 
 #: src/cli/main.cpp
 msgid "Use on or off.\n"
@@ -570,6 +633,10 @@ msgstr "iPhone が範囲外になるとセッションをロックします。"
 #: src/cli/main.cpp
 msgid "Locking on the iPhone going out of range is off."
 msgstr "iPhone が範囲外になったときのロックは無効です。"
+
+#: src/cli/main.cpp
+msgid "Could not reach the daemon.\n"
+msgstr "デーモンに接続できませんでした。\n"
 
 #: src/cli/main.cpp
 msgid "Daemon closed the connection before the operation finished.\n"
@@ -654,8 +721,8 @@ msgstr "デーモンから通話を読み取れませんでした。\n"
 
 #: src/cli/main.cpp
 #, c-format
-msgid "No calls. Check 'tether --bt-connection'.\n"
-msgstr "通話はありません。'tether --bt-connection' を確認してください。\n"
+msgid "No calls. Check 'tether bt connection'.\n"
+msgstr "通話はありません。'tether bt connection' を確認してください。\n"
 
 #: src/cli/main.cpp
 msgid "withheld"
@@ -667,8 +734,8 @@ msgstr "デーモンから通知を読み取れませんでした。\n"
 
 #: src/cli/main.cpp
 #, c-format
-msgid "No notifications yet. Check 'tether --bt-connection'.\n"
-msgstr "まだ通知はありません。'tether --bt-connection' を確認してください。\n"
+msgid "No notifications yet. Check 'tether bt connection'.\n"
+msgstr "まだ通知はありません。'tether bt connection' を確認してください。\n"
 
 #: src/cli/main.cpp
 msgid "Could not read conversations from the daemon.\n"
@@ -676,8 +743,8 @@ msgstr "デーモンから会話を読み取れませんでした。\n"
 
 #: src/cli/main.cpp
 #, c-format
-msgid "No conversations yet. Check 'tether --bt-connection'.\n"
-msgstr "まだ会話はありません。'tether --bt-connection' を確認してください。\n"
+msgid "No conversations yet. Check 'tether bt connection'.\n"
+msgstr "まだ会話はありません。'tether bt connection' を確認してください。\n"
 
 #: src/cli/main.cpp
 #, c++-format
@@ -685,16 +752,10 @@ msgid "({} unread)"
 msgid_plural "({} unread)"
 msgstr[0] "({} 件未読)"
 
-#: src/cli/main.cpp src/gtk/devices_view.cpp
+#: src/cli/main.cpp
 #, c++-format
-msgid ""
-"The running tetherd is {}, but this is tether {}. Stop it and it\n"
-"restarts on demand:\n"
-"    pkill tetherd\n"
-msgstr ""
-"実行中の tetherd は {} ですが、こちらは tether {} です。停止すれば必要に応じ"
-"て自動で起動します:\n"
-"    pkill tetherd\n"
+msgid "The running tetherd is {}, but this is tether {}. {}\n"
+msgstr "実行中の tetherd は {} ですが、こちらは tether {} です。{}\n"
 
 #: src/cli/main.cpp src/gtk/devices_view.cpp
 msgid "an older build"
@@ -706,9 +767,8 @@ msgstr "デーモンから連絡先を読み取れませんでした。\n"
 
 #: src/cli/main.cpp
 #, c-format
-msgid "No contacts yet. Check 'tether --bt-connection'.\n"
-msgstr ""
-"まだ連絡先はありません。'tether --bt-connection' を確認してください。\n"
+msgid "No contacts yet. Check 'tether bt connection'.\n"
+msgstr "まだ連絡先はありません。'tether bt connection' を確認してください。\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -761,7 +821,7 @@ msgstr "デーモン"
 msgid "running"
 msgstr "実行中"
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gtk/settings_view.cpp
 msgid "Clipboard"
 msgstr "クリップボード"
 
@@ -817,10 +877,10 @@ msgstr "最近受信したファイル:"
 #, c-format
 msgid ""
 "\n"
-"Run 'tether --pending' to see what is waiting to be accepted.\n"
+"Run 'tether pending' to see what is waiting to be accepted.\n"
 msgstr ""
 "\n"
-"承認待ちのものを見るには 'tether --pending' を実行してください。\n"
+"承認待ちのものを見るには 'tether pending' を実行してください。\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -831,10 +891,12 @@ msgstr "待機中のペアリングリクエストはありません。\n"
 #, c-format
 msgid ""
 "\n"
-"Accept one with: tether --accept <fingerprint>\n"
+"Accept one with: tether accept <fingerprint>\n"
+"Turn one down with: tether reject <fingerprint>\n"
 msgstr ""
 "\n"
-"次のコマンドで承認します: tether --accept <fingerprint>\n"
+"承認するには: tether accept <fingerprint>\n"
+"拒否するには: tether reject <fingerprint>\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -893,6 +955,14 @@ msgstr ""
 "'systemctl --user daemon-reload' を実行して忘れさせてください。\n"
 
 #: src/cli/main.cpp
+msgid "Run 'tether --help'."
+msgstr "'tether --help' を実行してください。"
+
+#: src/cli/main.cpp
+msgid "tether: 'bt' needs a name, e.g. tether bt setup"
+msgstr "tether: 'bt' にはサブコマンド名が必要です。例: tether bt setup"
+
+#: src/cli/main.cpp
 msgid "--port expects a number.\n"
 msgstr "--port には数値を指定してください。\n"
 
@@ -900,14 +970,33 @@ msgstr "--port には数値を指定してください。\n"
 msgid "--timeout expects a number in milliseconds.\n"
 msgstr "--timeout にはミリ秒単位の数値を指定してください。\n"
 
+#. TRANSLATORS: {} is the argument as typed.
 #: src/cli/main.cpp
-msgid "Unknown action. Run tether --help for options\n"
-msgstr ""
-"不明な操作です。オプションを見るには tether --help を実行してください\n"
+#, c++-format
+msgid "tether: unknown option '{}'"
+msgstr "tether: 不明なオプション '{}'"
 
 #: src/cli/main.cpp
-msgid "  No tetherd instances found.\n"
-msgstr "  tetherd のインスタンスは見つかりませんでした。\n"
+#, c++-format
+msgid "tether: unknown command '{}'"
+msgstr "tether: 不明なコマンド '{}'"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "tether: unexpected argument '{}'"
+msgstr "tether: 予期しない引数 '{}'"
+
+#: src/cli/main.cpp
+msgid "tether: no command given"
+msgstr "tether: コマンドが指定されていません"
+
+#: src/cli/main.cpp
+msgid "Scanning for tetherd instances on the local network..."
+msgstr "ローカルネットワーク上の tetherd インスタンスを検索しています..."
+
+#: src/cli/main.cpp
+msgid "  No tetherd instances found."
+msgstr "  tetherd のインスタンスは見つかりませんでした。"
 
 #: src/cli/main.cpp
 msgid "[new]"
@@ -924,31 +1013,42 @@ msgid_plural "Found %zu devices in %.1fs\n"
 msgstr[0] "%2$.1fs で %1$zu 台のデバイスが見つかりました\n"
 
 #: src/cli/main.cpp
-msgid ""
-"The daemon is not running, and could not be started. Check the log in "
-"$XDG_STATE_HOME/tether, or start it with 'systemctl --user start "
-"tetherd.service'.\n"
+#, c++-format
+msgid "No daemon answered at {}:{}."
+msgstr "{}:{} で応答するデーモンがありません。"
+
+#: src/cli/main.cpp
+msgid "tether: accept needs a fingerprint, see 'tether pending'"
 msgstr ""
-"デーモンが実行されておらず、起動もできませんでした。$XDG_STATE_HOME/tether の"
-"ログを確認するか、'systemctl --user start tetherd.service' で起動してくださ"
-"い。\n"
+"tether: accept にはフィンガープリントが必要です。'tether pending' を参照して"
+"ください"
 
 #: src/cli/main.cpp
 #, c++-format
-msgid "No daemon answered at {}:{}.\n"
-msgstr "{}:{} で応答するデーモンがありません。\n"
+msgid "Paired {}."
+msgstr "{} とペアリングしました。"
 
 #: src/cli/main.cpp
-msgid ""
-"Explicit framework connection locally rejected! Did you target explicitly "
-"invalid TLS or is daemon broken?\n"
+msgid "tether: reject needs a fingerprint, see 'tether pending'"
 msgstr ""
-"明示的なフレームワーク接続がローカルで拒否されました。明らかに無効な TLS を指"
-"定したか、デーモンが壊れていませんか?\n"
+"tether: reject にはフィンガープリントが必要です。'tether pending' を参照して"
+"ください"
 
 #: src/cli/main.cpp
-msgid "--forget expects a fingerprint.\n"
-msgstr "--forget にはフィンガープリントを指定してください。\n"
+msgid "No pairing request from that fingerprint is waiting.\n"
+msgstr ""
+"そのフィンガープリントからの待機中のペアリングリクエストはありません。\n"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Rejected {}."
+msgstr "{} を拒否しました。"
+
+#: src/cli/main.cpp
+msgid "tether: forget needs a fingerprint, see 'tether devices'"
+msgstr ""
+"tether: forget にはフィンガープリントが必要です。'tether devices' を参照して"
+"ください"
 
 #: src/cli/main.cpp
 msgid "No paired device with that fingerprint.\n"
@@ -956,12 +1056,72 @@ msgstr "そのフィンガープリントを持つペアリング済みデバイ
 
 #: src/cli/main.cpp
 #, c++-format
+msgid "Forgot {}."
+msgstr "{} を削除しました。"
+
+#: src/cli/main.cpp
+msgid "tether: send needs a file path"
+msgstr "tether: send にはファイルのパスが必要です"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Sending {}..."
+msgstr "{} を送信しています..."
+
+#: src/cli/main.cpp
+#, c++-format
 msgid "Transfer Failed: {}"
 msgstr "転送に失敗しました: {}"
 
 #: src/cli/main.cpp
-msgid "A number is required, e.g. --bt-call +15551234567\n"
-msgstr "番号が必要です。例: --bt-call +15551234567\n"
+msgid "File transfer delivered."
+msgstr "ファイルを送信しました。"
+
+#: src/cli/main.cpp
+msgid "Clipboard sync is on: what you copy here goes to the iPhone."
+msgstr ""
+"クリップボードの同期はオンです: ここでコピーしたものは iPhone に送られます。"
+
+#: src/cli/main.cpp
+msgid "Clipboard sync is paused: nothing copied here leaves this computer."
+msgstr ""
+"クリップボードの同期は一時停止中です: ここでコピーしたものはこのコンピュー"
+"ターから出ません。"
+
+#: src/cli/main.cpp
+msgid "tether: clipboard takes on, off or status"
+msgstr "tether: clipboard には on、off または status を指定します"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Clipboard sync: {}"
+msgstr "クリップボードの同期: {}"
+
+#: src/cli/main.cpp
+msgid "on"
+msgstr "オン"
+
+#: src/cli/main.cpp
+msgid "off"
+msgstr "オフ"
+
+#: src/cli/main.cpp
+msgid "No iPhone app is muted."
+msgstr "ミュート中の iPhone アプリはありません。"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Desktop popups from {} are muted."
+msgstr "{} のデスクトップのポップアップをミュートしました。"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Desktop popups from {} are back."
+msgstr "{} のデスクトップのポップアップを再び表示します。"
+
+#: src/cli/main.cpp
+msgid "A number is required, e.g. tether bt call +15551234567"
+msgstr "番号が必要です。例: tether bt call +15551234567"
 
 #: src/cli/main.cpp
 msgid "Dialing."
@@ -984,8 +1144,8 @@ msgid "Hanging up."
 msgstr "終了しています。"
 
 #: src/cli/main.cpp
-msgid "Expected on or off, e.g. --bt-calls-enable on\n"
-msgstr "on または off を指定してください。例: --bt-calls-enable on\n"
+msgid "Expected on or off, e.g. tether bt calls-enable on"
+msgstr "on または off を指定してください。例: tether bt calls-enable on"
 
 #: src/cli/main.cpp
 msgid "Call control enabled."
@@ -996,41 +1156,40 @@ msgid "Call control disabled."
 msgstr "通話操作をオフにしました。"
 
 #: src/cli/main.cpp
-msgid "A thread key is required, e.g. --bt-messages tel:+15551234567\n"
-msgstr "会話のキーが必要です。例: --bt-messages tel:+15551234567\n"
+msgid "A thread key is required, e.g. tether bt messages tel:+15551234567"
+msgstr "会話のキーが必要です。例: tether bt messages tel:+15551234567"
 
 #: src/cli/main.cpp
 msgid ""
-"A conversation and a message are required, e.g. --bt-send tel:+15551234567 "
-"\"hi\"\n"
-msgstr "会話とメッセージが必要です。例: --bt-send tel:+15551234567 \"やあ\"\n"
+"A conversation and a message are required, e.g. tether bt send tel:"
+"+15551234567 \"hi\""
+msgstr ""
+"会話とメッセージが必要です。例: tether bt send tel:+15551234567 \"やあ\""
 
 #: src/cli/main.cpp
-msgid "A Bluetooth address is required, e.g. --bt-pair AA:BB:CC:DD:EE:FF\n"
-msgstr "Bluetooth アドレスが必要です。例: --bt-pair AA:BB:CC:DD:EE:FF\n"
+msgid "A Bluetooth address is required, e.g. tether bt pair AA:BB:CC:DD:EE:FF"
+msgstr "Bluetooth アドレスが必要です。例: tether bt pair AA:BB:CC:DD:EE:FF"
 
 #: src/cli/main.cpp
-msgid "Expected on or off, e.g. --bt-enable off\n"
-msgstr "on または off を指定してください。例: --bt-enable off\n"
+msgid "Expected on or off, e.g. tether bt enable off"
+msgstr "on または off を指定してください。例: tether bt enable off"
 
 #: src/cli/main.cpp
-#, c-format
-msgid "Bluetooth enabled.\n"
-msgstr "Bluetooth を有効にしました。\n"
+msgid "Bluetooth enabled."
+msgstr "Bluetooth を有効にしました。"
 
 #: src/cli/main.cpp
-#, c-format
 msgid ""
 "Bluetooth disabled. Tether will not reconnect the iPhone. A link that is\n"
-"already up stays up until you disconnect it or the phone goes out of range.\n"
+"already up stays up until you disconnect it or the phone goes out of range."
 msgstr ""
 "Bluetooth を無効にしました。Tether は iPhone に再接続しません。すでに確立\n"
-"しているリンクは、切断するか iPhone が範囲外になるまで維持されます。\n"
+"しているリンクは、切断するか iPhone が範囲外になるまで維持されます。"
 
 #: src/cli/main.cpp
 #, c++-format
-msgid "Expected on or off, e.g. {} on\n"
-msgstr "on または off を指定してください。例: {} on\n"
+msgid "Expected on or off, e.g. tether bt {} on"
+msgstr "on または off を指定してください。例: tether bt {} on"
 
 #: src/cli/main.cpp
 msgid "Notification contents enabled."
@@ -1049,25 +1208,27 @@ msgid "Notification mirroring disabled."
 msgstr "通知のミラーリングを無効にしました。"
 
 #: src/cli/main.cpp
-msgid "Expected encrypted, plaintext or none, e.g. --bt-retention encrypted\n"
+msgid ""
+"Expected encrypted, plaintext or none, e.g. tether bt retention encrypted"
 msgstr ""
-"encrypted、plaintext、none のいずれかを指定してください。例: --bt-retention "
-"encrypted\n"
+"encrypted、plaintext、none のいずれかを指定してください。例: tether bt "
+"retention encrypted"
 
 #: src/cli/main.cpp
-#, c-format
-msgid "Deleting stored messages and contacts.\n"
-msgstr "保存されたメッセージと連絡先を削除しています。\n"
+msgid "Deleting stored messages and contacts."
+msgstr "保存されたメッセージと連絡先を削除しています。"
 
 #: src/cli/main.cpp
-#, c-format
-msgid "Retention set to %s.\n"
-msgstr "保持設定を %s にしました。\n"
+#, c++-format
+msgid "Retention set to {}."
+msgstr "保持設定を {} にしました。"
 
 #: src/cli/main.cpp
-msgid "Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"
+msgid ""
+"Expected a controller, e.g. tether bt adapter hci1, or tether bt adapter auto"
 msgstr ""
-"アダプタを指定してください。例: --bt-adapter hci1 または --bt-adapter auto\n"
+"アダプタを指定してください。例: tether bt adapter hci1 または tether bt "
+"adapter auto"
 
 #: src/cli/main.cpp
 #, c++-format
@@ -1075,10 +1236,8 @@ msgid "No Bluetooth controller matches '{}'. Available:\n"
 msgstr "「{}」に一致する Bluetooth アダプタがありません。利用可能:\n"
 
 #: src/cli/main.cpp
-#, c-format
-msgid "Controller selection is automatic: the first powered one.\n"
-msgstr ""
-"アダプタの選択は自動です。電源の入っている最初のアダプタを使用します。\n"
+msgid "Controller selection is automatic: the first powered one."
+msgstr "アダプタの選択は自動です。電源の入っている最初のアダプタを使用します。"
 
 #: src/cli/main.cpp
 #, c++-format
@@ -1400,6 +1559,7 @@ msgid "Confirm"
 msgstr "確認"
 
 #: src/core/src/bluetooth/pairing.cpp src/gtk/messages_view.cpp
+#: src/gtk/settings_view.cpp
 msgid "Cancel"
 msgstr "キャンセル"
 
@@ -1455,7 +1615,8 @@ msgstr "ペアリングが完了しませんでした。iPhone の確認画面�
 msgid "Pairing failed: {}"
 msgstr "ペアリングに失敗しました: {}"
 
-#: src/core/src/bluetooth/pairing.cpp
+#. TRANSLATORS: {} is a device name.
+#: src/core/src/bluetooth/pairing.cpp src/gtk/devices_view.cpp
 #, c++-format
 msgid "Paired with {}."
 msgstr "{} とペアリングしました。"
@@ -1691,7 +1852,8 @@ msgstr "送信に失敗しました: {}"
 msgid "unknown error"
 msgstr "不明なエラー"
 
-#: src/core/src/net.cpp src/gtk/devices_view.cpp src/gtk/messages_view.cpp
+#: src/core/src/net.cpp src/gtk/calls_view.cpp src/gtk/devices_view.cpp
+#: src/gtk/messages_view.cpp
 msgid "Could not reach the Tether daemon."
 msgstr "Tether デーモンに接続できませんでした。"
 
@@ -1705,13 +1867,81 @@ msgstr "{0} ({1}) がこのデバイスとのペアリングを求めていま�
 msgid "Pairing Request"
 msgstr "ペアリング要求"
 
-#: src/core/src/net.cpp
+#: src/core/src/net.cpp src/daemon/main.cpp src/gtk/devices_view.cpp
 msgid "Accept"
 msgstr "承認"
 
-#: src/core/src/net.cpp
+#: src/core/src/net.cpp src/daemon/main.cpp src/gtk/devices_view.cpp
 msgid "Reject"
 msgstr "拒否"
+
+#: src/daemon/main.cpp
+#, c++-format
+msgid "Details: {}"
+msgstr "詳細: {}"
+
+#: src/daemon/main.cpp
+msgid "Tether could not start"
+msgstr "Tether を起動できませんでした"
+
+#: src/daemon/main.cpp
+msgid ""
+"Its TLS identity could not be created or read. Check ~/.config/tether/"
+"cert.pem and key.pem, or move them away to make new ones."
+msgstr ""
+"TLS の識別情報を作成または読み取れませんでした。~/.config/tether/cert.pem と "
+"key.pem を確認するか、それらを別の場所に移して新しく作り直してください。"
+
+#: src/daemon/main.cpp
+msgid ""
+"Its command socket could not be created under $XDG_RUNTIME_DIR. Is another "
+"tetherd running, or the runtime directory missing?"
+msgstr ""
+"コマンドソケットを $XDG_RUNTIME_DIR 以下に作成できませんでした。別の tetherd "
+"が実行中か、ランタイムディレクトリがないのではありませんか?"
+
+#: src/daemon/main.cpp
+msgid ""
+"Port 5134 is already in use, so the iPhone cannot connect. Another tetherd, "
+"or another program, holds it. Find it with: ss -ltnp 'sport = :5134'"
+msgstr ""
+"ポート 5134 はすでに使用中のため、iPhone が接続できません。別の tetherd か別"
+"のプログラムが使用しています。次のコマンドで確認できます: ss -ltnp 'sport = "
+":5134'"
+
+#: src/daemon/main.cpp
+msgid "Clipboard sync is off"
+msgstr "クリップボードの同期はオフです"
+
+#: src/daemon/main.cpp
+msgid ""
+"This compositor does not offer the data-control protocol Tether needs, so "
+"the clipboard will not follow the iPhone. Files, messages and notifications "
+"still work."
+msgstr ""
+"このコンポジターは Tether が必要とする data-control プロトコルを提供していな"
+"いため、クリップボードは iPhone と同期されません。ファイル、メッセージ、通知"
+"は引き続き使えます。"
+
+#: src/daemon/main.cpp
+msgid "Pairing request waiting"
+msgstr "ペアリングリクエストが待機中"
+
+#: src/daemon/main.cpp
+#, c++-format
+msgid ""
+"{} asked to pair with this computer and the prompt timed out. It stays "
+"pending for an hour; answer here or in the Devices tab."
+msgstr ""
+"{} がこのコンピューターとのペアリングを要求しましたが、確認がタイムアウトしま"
+"した。要求は 1 時間保留されます。ここか「デバイス」タブで応答してください。"
+
+#: src/daemon/main.cpp
+#, c++-format
+msgid "{} asked to pair with this computer. Answer here or in the Devices tab."
+msgstr ""
+"{} がこのコンピューターとのペアリングを要求しています。ここか「デバイス」タブ"
+"で応答してください。"
 
 #: src/daemon/main.cpp
 msgid "This PC can't be discovered"
@@ -1726,6 +1956,18 @@ msgstr ""
 "ません。次のコマンドで起動してください: sudo systemctl enable --now avahi-"
 "daemon"
 
+#: src/daemon/main.cpp
+msgid "Bluetooth is unavailable"
+msgstr "Bluetooth を利用できません"
+
+#: src/daemon/main.cpp
+msgid ""
+"bluetoothd could not be reached, so messages, contacts and notifications "
+"from the iPhone are off until it is. Check: systemctl status bluetooth"
+msgstr ""
+"bluetoothd に接続できないため、接続できるようになるまで iPhone からのメッセー"
+"ジ、連絡先、通知はオフになります。確認: systemctl status bluetooth"
+
 #: src/daemon/notification.cpp
 msgid "File arrived"
 msgstr "ファイルが届きました"
@@ -1739,6 +1981,12 @@ msgid "Open Folder"
 msgstr "フォルダを開く"
 
 #: src/daemon/notification.cpp
+#, c++-format
+msgid "{} more notification"
+msgid_plural "{} more notifications"
+msgstr[0] "他 {} 件の通知"
+
+#: src/daemon/notification.cpp
 msgid "Reply"
 msgstr "返信"
 
@@ -1750,6 +1998,12 @@ msgstr "コードをコピー"
 #, c++-format
 msgid "Open in {}"
 msgstr "{} で開く"
+
+#. TRANSLATORS: {} is an iPhone app name. Silences its popups on this computer.
+#: src/daemon/notification.cpp
+#, c++-format
+msgid "Mute {}"
+msgstr "{} をミュート"
 
 #: src/gtk/calls_view.cpp
 msgid "Incoming"
@@ -1815,20 +2069,29 @@ msgstr "拒否"
 msgid "Hang up"
 msgstr "終了"
 
+#. TRANSLATORS: {} is a phone number.
+#: src/gtk/calls_view.cpp
+#, c++-format
+msgid "Calling {}…"
+msgstr "{} に発信しています…"
+
 #: src/gtk/calls_view.cpp
 msgid "No calls."
 msgstr "通話はありません。"
 
 #: src/gtk/calls_view.cpp
-msgid "Call control is off. Turn it on with 'tether --bt-calls-enable on'."
+msgid ""
+"Call control is off. Turn it on under Settings > Experimental > Call control "
+"over Bluetooth."
 msgstr ""
-"通話操作はオフです。'tether --bt-calls-enable on' でオンにしてください。"
+"通話操作はオフです。設定 > 実験的機能 > Bluetooth 経由の通話操作 でオンにして"
+"ください。"
 
 #: src/gtk/calls_view.cpp
 msgid "Number to call"
 msgstr "発信先の番号"
 
-#: src/gtk/calls_view.cpp
+#: src/gtk/calls_view.cpp src/gtk/contacts_view.cpp
 msgid "Call"
 msgstr "発信"
 
@@ -1862,6 +2125,16 @@ msgid "Message {}"
 msgstr "{} にメッセージ"
 
 #: src/gtk/contacts_view.cpp
+msgid "Call (turn on call control under Settings > Experimental)"
+msgstr "発信 (設定 > 実験的機能 で通話操作をオンにしてください)"
+
+#. TRANSLATORS: Spoken name of the call button beside a phone number.
+#: src/gtk/contacts_view.cpp
+#, c++-format
+msgid "Call {}"
+msgstr "{} に発信"
+
+#: src/gtk/contacts_view.cpp
 msgid "No contacts yet. Check the Bluetooth link on the Devices page."
 msgstr ""
 "まだ連絡先はありません。デバイスページで Bluetooth 接続を確認してください。"
@@ -1879,8 +2152,52 @@ msgid "The Tether daemon is not running."
 msgstr "Tether デーモンが動作していません。"
 
 #: src/gtk/daemon_client.cpp
+msgid "The Tether daemon went away. Reconnecting…"
+msgstr "Tether デーモンとの接続が切れました。再接続しています…"
+
+#: src/gtk/daemon_client.cpp
 msgid "Daemon Online"
 msgstr "デーモンはオンライン"
+
+#: src/gtk/devices_view.cpp
+msgid "Looking for the iPhone nearby…"
+msgstr "近くの iPhone を探しています…"
+
+#: src/gtk/devices_view.cpp
+msgid "Looking for the iPhone again…"
+msgstr "iPhone をもう一度探しています…"
+
+#. TRANSLATORS: {} is a device name.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "Connecting to {}…"
+msgstr "{} に接続しています…"
+
+#. TRANSLATORS: {} is a device name.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "Pairing with {}… Confirm on the iPhone when it asks."
+msgstr "{} とペアリング中… iPhone に確認が表示されたら承認してください。"
+
+#. TRANSLATORS: {} is a six-digit code.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "Check that both devices show the code {}."
+msgstr "両方のデバイスにコード {} が表示されていることを確認してください。"
+
+#: src/gtk/devices_view.cpp
+msgid "Waiting for the link to settle…"
+msgstr "リンクが安定するのを待っています…"
+
+#: src/gtk/devices_view.cpp
+msgid "The iPhone refused the connection. Trying once more…"
+msgstr "iPhone が接続を拒否しました。もう一度試しています…"
+
+#. TRANSLATORS: {} is a device name.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "{} is already paired."
+msgstr "{} はすでにペアリング済みです。"
 
 #. TRANSLATORS: Left earbud, read aloud by screen readers before its battery level.
 #: src/gtk/devices_view.cpp
@@ -1993,6 +2310,11 @@ msgid "This machine cannot carry the Bluetooth features."
 msgstr "このマシンでは Bluetooth 機能を利用できません。"
 
 #: src/gtk/devices_view.cpp
+#, c++-format
+msgid "The running tetherd is {}, but this is tether {}. {}"
+msgstr "実行中の tetherd は {} ですが、こちらは tether {} です。{}"
+
+#: src/gtk/devices_view.cpp
 msgid "Link"
 msgstr "リンク"
 
@@ -2018,6 +2340,10 @@ msgid "Device is offline. Make sure it is switched on and on the same network."
 msgstr ""
 "デバイスはオフラインです。電源が入っていて同じネットワーク上にあることを確認"
 "してください。"
+
+#: src/gtk/devices_view.cpp
+msgid "This device asked to pair with this computer."
+msgstr "このデバイスがこのコンピューターとのペアリングを要求しました。"
 
 #: src/gtk/devices_view.cpp
 #, c++-format
@@ -2087,8 +2413,16 @@ msgid "({0} of {1})"
 msgstr "({1} 件中 {0} 件)"
 
 #: src/gtk/devices_view.cpp
+msgid "Could not reach the Tether daemon; nothing was sent."
+msgstr "Tether デーモンに接続できませんでした。何も送信されていません。"
+
+#: src/gtk/devices_view.cpp
 msgid "Daemon unavailable."
 msgstr "デーモンを利用できません。"
+
+#: src/gtk/devices_view.cpp
+msgid "The Tether daemon is not running, so nothing was sent."
+msgstr "Tether デーモンが動作していないため、何も送信されていません。"
 
 #: src/gtk/devices_view.cpp
 msgid "Send File"
@@ -2171,6 +2505,12 @@ msgstr "ペアリング済み"
 msgid "Waiting for approval on {0}..."
 msgstr "{0} での承認を待っています…"
 
+#. TRANSLATORS: {} is a device name.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "Rejected the pairing request from {}."
+msgstr "{} からのペアリング要求を拒否しました。"
+
 #: src/gtk/devices_view.cpp
 msgid ""
 "Could not reach that device. If a firewall is running, Tether needs inbound "
@@ -2195,9 +2535,25 @@ msgstr "そのデバイスに接続できませんでした。"
 msgid "Pair request was rejected."
 msgstr "ペアリング要求は拒否されました。"
 
+#. TRANSLATORS: {} is a device name.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "{} wants to pair. Accept or reject it above."
+msgstr "{} がペアリングを求めています。上で承認または拒否してください。"
+
 #: src/gtk/devices_view.cpp
 msgid "Ready"
 msgstr "準備完了"
+
+#. TRANSLATORS: {0} is a file name, {1} a percentage.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "Sending {0}… {1}%"
+msgstr "{0} を送信しています… {1}%"
+
+#: src/gtk/devices_view.cpp
+msgid "Send failed."
+msgstr "送信に失敗しました。"
 
 #: src/gtk/devices_view.cpp
 #, c++-format
@@ -2216,8 +2572,12 @@ msgid "Clipboard is empty."
 msgstr "クリップボードは空です。"
 
 #: src/gtk/devices_view.cpp
-msgid "Desktop Clipboard Sync triggered."
-msgstr "デスクトップのクリップボード同期を実行しました。"
+msgid "Clipboard sent to the iPhone."
+msgstr "クリップボードを iPhone に送信しました。"
+
+#: src/gtk/devices_view.cpp
+msgid "The clipboard is empty; nothing to send."
+msgstr "クリップボードは空です。送信するものがありません。"
 
 #: src/gtk/devices_view.cpp
 msgid "Messages and notifications are connected."
@@ -2241,6 +2601,10 @@ msgstr ""
 "iPhone にこのコードが表示されていますか?\n"
 "\n"
 "%s"
+
+#: src/gtk/devices_view.cpp
+msgid "The AirPods did not connect."
+msgstr "AirPods が接続されませんでした。"
 
 #: src/gtk/devices_view.cpp
 msgid "Connect your iPhone"
@@ -2395,10 +2759,6 @@ msgid "Pair Device"
 msgstr "デバイスとペアリング"
 
 #: src/gtk/devices_view.cpp
-msgid "Force Trust (Accept Pending)"
-msgstr "強制的に信頼 (保留中を承認)"
-
-#: src/gtk/devices_view.cpp
 msgid "Drop files here to send"
 msgstr "送信するファイルをここにドロップ"
 
@@ -2427,8 +2787,16 @@ msgid "Main menu"
 msgstr "メインメニュー"
 
 #: src/gtk/main.cpp
+msgid "No system tray was found, so the window is shown instead."
+msgstr "システムトレイが見つからないため、代わりにウィンドウを表示します。"
+
+#: src/gtk/main.cpp
 msgid "Look for devices"
 msgstr "デバイスを探す"
+
+#: src/gtk/main.cpp
+msgid "Scanning for devices…"
+msgstr "デバイスを検索しています…"
 
 #: src/gtk/main.cpp
 msgid "Devices"
@@ -2485,11 +2853,31 @@ msgstr[0] "未読メッセージ {} 件"
 msgid "Sent: {}"
 msgstr "送信: {}"
 
-#. TRANSLATORS: Read aloud before a message you received, {} is the message.
+#. TRANSLATORS: Read aloud before a message you received, {0} is the sender, {1}
+#. the message.
+#: src/gtk/messages_view.cpp
+#, c++-format
+msgid "Received from {0}: {1}"
+msgstr "{0} から受信: {1}"
+
+#. TRANSLATORS: Read aloud before a message you received, {} is
+#. the message.
 #: src/gtk/messages_view.cpp
 #, c++-format
 msgid "Received: {}"
 msgstr "受信: {}"
+
+#: src/gtk/messages_view.cpp
+msgid "Sending…"
+msgstr "送信中…"
+
+#: src/gtk/messages_view.cpp
+msgid "Not sent."
+msgstr "送信されませんでした。"
+
+#: src/gtk/messages_view.cpp
+msgid "Retry"
+msgstr "再試行"
 
 #: src/gtk/messages_view.cpp
 msgid "Bluetooth connection needed to sync messages."
@@ -2498,10 +2886,6 @@ msgstr "メッセージの同期にはBluetooth接続が必要です。"
 #: src/gtk/messages_view.cpp
 msgid "Select a conversation"
 msgstr "会話を選択"
-
-#: src/gtk/messages_view.cpp
-msgid "Sending…"
-msgstr "送信中…"
 
 #: src/gtk/messages_view.cpp
 msgid "Enter a recipient."
@@ -2519,6 +2903,10 @@ msgstr "この会話への返信は利用できません。"
 msgid "No answer about that message; it may still have been sent."
 msgstr ""
 "そのメッセージについて応答がありません。送信されている可能性はあります。"
+
+#: src/gtk/messages_view.cpp
+msgid "No answer from the phone."
+msgstr "iPhone から応答がありません。"
 
 #: src/gtk/messages_view.cpp
 msgid "Could not reach the Tether daemon; the message was not sent."
@@ -2549,10 +2937,6 @@ msgstr "電話番号またはメールアドレス"
 msgid "Send"
 msgstr "送信"
 
-#: src/gtk/messages_view.cpp
-msgid "Retry"
-msgstr "再試行"
-
 #: src/gtk/notifications_view.cpp
 msgid "Dismiss on the iPhone"
 msgstr "iPhone で消去"
@@ -2578,6 +2962,31 @@ msgstr "まだ通知はありません。"
 #: src/gtk/notifications_view.cpp
 msgid "Notification mirroring is unavailable."
 msgstr "通知のミラーリングは利用できません。"
+
+#: src/gtk/settings_view.cpp
+msgid "The Tether daemon is not running, so this setting was not changed."
+msgstr "Tether デーモンが動作していないため、この設定は変更されませんでした。"
+
+#: src/gtk/settings_view.cpp
+msgid "Delete the stored message history?"
+msgstr "保存されたメッセージ履歴を削除しますか?"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Messages and contacts already saved on this computer are deleted right away. "
+"The phone keeps its own copy, and conversations are re-read from it while "
+"connected."
+msgstr ""
+"このコンピューターに保存済みのメッセージと連絡先はすぐに削除されます。iPhone "
+"側のデータはそのまま残り、接続中は会話が iPhone から再び読み込まれます。"
+
+#: src/gtk/settings_view.cpp
+msgid "Delete history"
+msgstr "履歴を削除"
+
+#: src/gtk/settings_view.cpp
+msgid "Unmute"
+msgstr "ミュート解除"
 
 #: src/gtk/settings_view.cpp
 msgid ""
@@ -2616,6 +3025,24 @@ msgid ""
 "Symbolic follows the panel's color. Takes effect the next time Tether starts."
 msgstr ""
 "シンボリックはパネルの色に従います。次回の Tether 起動時に反映されます。"
+
+#: src/gtk/settings_view.cpp
+msgid "Over Wi-Fi, what is copied here goes to the iPhone and back."
+msgstr ""
+"Wi-Fi 経由で、ここでコピーしたものが iPhone に送られ、iPhone からも届きます。"
+
+#: src/gtk/settings_view.cpp
+msgid "Sync the clipboard automatically"
+msgstr "クリップボードを自動的に同期"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Off pauses it both ways; Send Clipboard on the Devices page still works. "
+"Copies a password manager marks as sensitive are never sent."
+msgstr ""
+"オフにすると双方向とも一時停止します。「デバイス」ページの「クリップボードを"
+"送信」は引き続き使えます。パスワードマネージャーが機密としてマークしたコピー"
+"は送信されません。"
 
 #: src/gtk/settings_view.cpp
 msgid "iPhone notifications"
@@ -2666,6 +3093,22 @@ msgstr "メッセージのプレビューを表示"
 #: src/gtk/settings_view.cpp
 msgid "Off shows only the sender."
 msgstr "オフにすると送信者のみ表示します。"
+
+#: src/gtk/settings_view.cpp
+msgid "Muted apps"
+msgstr "ミュート中のアプリ"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"iPhone apps whose alerts show no popup here. They still appear on the "
+"Notifications tab. Mute one from its popup."
+msgstr ""
+"ここでポップアップを表示しない iPhone アプリです。「通知」タブには引き続き表"
+"示されます。ミュートはポップアップから行えます。"
+
+#: src/gtk/settings_view.cpp
+msgid "No apps are muted."
+msgstr "ミュート中のアプリはありません。"
 
 #: src/gtk/settings_view.cpp
 msgid "Security"
@@ -2738,6 +3181,26 @@ msgstr "Bluetooth 経由の通話操作"
 msgid "Answer and place calls from the Calls tab."
 msgstr "「通話」タブから通話の応答と発信ができます。"
 
+#: src/gtk/tray.cpp
+msgid "Hide Tether"
+msgstr "Tether を隠す"
+
+#: src/gtk/tray.cpp
+msgid "Show Tether"
+msgstr "Tether を表示"
+
+#: src/gtk/tray.cpp
+msgid "Sync clipboard with iPhone"
+msgstr "iPhone とクリップボードを同期"
+
+#: src/gtk/tray.cpp
+msgid "Settings…"
+msgstr "設定…"
+
+#: src/gtk/tray.cpp
+msgid "Quit Tether"
+msgstr "Tether を終了"
+
 #: src/gtk/tray.cpp src/gtk/ui_util.cpp
 msgid "connected"
 msgstr "接続済み"
@@ -2757,6 +3220,16 @@ msgstr "{}: {}"
 msgid "Daemon: not running"
 msgstr "デーモン: 動作していません"
 
+#: src/gtk/tray.cpp
+#, c++-format
+msgid "{} pairing request waiting"
+msgid_plural "{} pairing requests waiting"
+msgstr[0] "{} 件のペアリングリクエストが待機中"
+
+#: src/gtk/tray.cpp
+msgid "Clipboard sync paused"
+msgstr "クリップボードの同期は一時停止中"
+
 #: src/gtk/ui_util.cpp
 msgid "Waiting for the Tether daemon."
 msgstr "Tether デーモンを待っています。"
@@ -2772,6 +3245,39 @@ msgstr "デバイスをペアリングし、ネットワーク越しにクリッ
 #: src/gtk/tether-gtk.desktop.in
 msgid "iPhone;iOS;SMS;Messages;Clipboard;Files;Notifications;Calls;AirPods;"
 msgstr "iPhone;iOS;SMS;メッセージ;クリップボード;ファイル;通知;通話;AirPods;"
+
+#~ msgid "Unknown action. Run tether --help for options\n"
+#~ msgstr ""
+#~ "不明な操作です。オプションを見るには tether --help を実行してください\n"
+
+#~ msgid ""
+#~ "The daemon is not running, and could not be started. Check the log in "
+#~ "$XDG_STATE_HOME/tether, or start it with 'systemctl --user start "
+#~ "tetherd.service'.\n"
+#~ msgstr ""
+#~ "デーモンが実行されておらず、起動もできませんでした。$XDG_STATE_HOME/"
+#~ "tether のログを確認するか、'systemctl --user start tetherd.service' で起動"
+#~ "してください。\n"
+
+#~ msgid ""
+#~ "Explicit framework connection locally rejected! Did you target explicitly "
+#~ "invalid TLS or is daemon broken?\n"
+#~ msgstr ""
+#~ "明示的なフレームワーク接続がローカルで拒否されました。明らかに無効な TLS "
+#~ "を指定したか、デーモンが壊れていませんか?\n"
+
+#~ msgid "--forget expects a fingerprint.\n"
+#~ msgstr "--forget にはフィンガープリントを指定してください。\n"
+
+#~ msgid "Call control is off. Turn it on with 'tether --bt-calls-enable on'."
+#~ msgstr ""
+#~ "通話操作はオフです。'tether --bt-calls-enable on' でオンにしてください。"
+
+#~ msgid "Desktop Clipboard Sync triggered."
+#~ msgstr "デスクトップのクリップボード同期を実行しました。"
+
+#~ msgid "Force Trust (Accept Pending)"
+#~ msgstr "強制的に信頼 (保留中を承認)"
 
 #~ msgid ""
 #~ "Where messages and contacts are stored on this computer. Encrypted keeps "
@@ -2836,7 +3342,3 @@ msgstr "iPhone;iOS;SMS;メッセージ;クリップボード;ファイル;通知
 #, fuzzy
 #~ msgid "Tether version"
 #~ msgstr "tether のバージョンを表示します。"
-
-#, fuzzy
-#~ msgid "on"
-#~ msgstr "ボンド"

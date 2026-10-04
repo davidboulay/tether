@@ -1,4 +1,5 @@
 #include "notification.hpp"
+#include "notification_keys.hpp"
 
 #include <tether/i18n.hpp>
 
@@ -14,6 +15,7 @@
 #include <tether/log.hpp>
 #include <tether/net.hpp>
 #include <thread>
+#include <unordered_map>
 #include <unordered_set>
 
 namespace tether {
@@ -22,9 +24,51 @@ namespace tether {
 
         constexpr const char* DESKTOP_ENTRY = "tether-gtk";
 
+        // A second popup from the same app inside this window replaces the
+        // first instead of stacking, so a busy group chat is one popup that
+        // keeps updating rather than one per message.
+        constexpr int GROUP_WINDOW_SECONDS = 8;
+
         struct NotificationRequest {
             std::filesystem::path path;
         };
+
+        // Everything below is touched on the notifier's thread only.
+        std::unordered_map<std::string, NotifyNotification*> g_live_by_key;
+        struct PopupMember {
+            NotificationSpec spec;
+            uint64_t sequence = 0;
+        };
+        std::unordered_map<std::string, PopupMember> g_members_by_key;
+        uint64_t g_member_sequence = 0;
+
+        struct RecentPopup {
+            NotifyNotification* notification = nullptr;
+            gint64 shown_at = 0;
+            int count = 0;
+            // A folded popup keeps the first one's Reply button, so only the
+            // same conversation may fold into it.
+            std::string reply_thread;
+        };
+        std::unordered_map<std::string, RecentPopup> g_recent_by_app;
+
+        std::function<void(const std::string&)> g_mute_handler;
+
+        void forget_live(NotifyNotification* notification) {
+            for (auto it = g_live_by_key.begin(); it != g_live_by_key.end();) {
+                if (it->second == notification) {
+                    g_members_by_key.erase(it->first);
+                    it = g_live_by_key.erase(it);
+                } else
+                    ++it;
+            }
+            for (auto it = g_recent_by_app.begin(); it != g_recent_by_app.end();) {
+                if (it->second.notification == notification)
+                    it = g_recent_by_app.erase(it);
+                else
+                    ++it;
+            }
+        }
 
         // Every icon name installed by any theme on this machine.
         // scanned once and cached for the life of the process.
@@ -147,10 +191,31 @@ namespace tether {
             }
         }
 
-        void on_copy_code_action(NotifyNotification*, char*, gpointer user_data) {
+        void on_copy_code_action(NotifyNotification* notification, char*, gpointer user_data) {
             auto* action = static_cast<NotificationActionData*>(user_data);
             if (action && g_copy_handler)
                 g_copy_handler(action->payload, action->handle);
+            // The code is used; the popup has nothing left to say.
+            notify_notification_close(notification, nullptr);
+        }
+
+        void on_mute_action(NotifyNotification* notification, char*, gpointer user_data) {
+            auto* action = static_cast<NotificationActionData*>(user_data);
+            if (action && g_mute_handler)
+                g_mute_handler(action->payload);
+            notify_notification_close(notification, nullptr);
+        }
+
+        struct ChoiceData {
+            std::function<void()> run;
+        };
+
+        void free_choice_data(gpointer data) { delete static_cast<ChoiceData*>(data); }
+
+        void on_choice_action(NotifyNotification* notification, char*, gpointer user_data) {
+            if (auto* choice = static_cast<ChoiceData*>(user_data); choice && choice->run)
+                choice->run();
+            notify_notification_close(notification, nullptr);
         }
 
         void on_reply_action(NotifyNotification*, char*, gpointer user_data) {
@@ -232,7 +297,10 @@ namespace tether {
             launch_uri(action->payload);
         }
 
-        void on_notification_closed(NotifyNotification* notification, gpointer) { g_object_unref(notification); }
+        void on_notification_closed(NotifyNotification* notification, gpointer) {
+            forget_live(notification);
+            g_object_unref(notification);
+        }
 
         gboolean show_notification_on_main(gpointer user_data) {
             std::unique_ptr<NotificationRequest> request(static_cast<NotificationRequest*>(user_data));
@@ -288,6 +356,38 @@ namespace tether {
             std::unique_ptr<NotificationSpec> spec(static_cast<NotificationSpec*>(user_data));
 
             const std::string icon = resolve_icon(spec->icons);
+
+            // A burst from one app folds into the popup already on screen.
+            const gint64 now = g_get_monotonic_time();
+            // A code needs its own Copy Code button, so it never folds.
+            const bool groupable = !spec->app_id.empty() && spec->choices.empty() && spec->otp_code.empty();
+            if (groupable) {
+                auto recent = g_recent_by_app.find(spec->app_id);
+                if (recent != g_recent_by_app.end() && recent->second.reply_thread == spec->reply_thread &&
+                    now - recent->second.shown_at < GROUP_WINDOW_SECONDS * G_USEC_PER_SEC) {
+                    RecentPopup& popup = recent->second;
+                    popup.count += 1;
+                    popup.shown_at = now;
+                    std::string body = spec->body;
+                    if (!body.empty())
+                        body += "\n";
+                    body += tr_format(P_("{} more notification", "{} more notifications", popup.count - 1),
+                                      popup.count - 1);
+                    notify_notification_update(
+                        popup.notification, spec->summary.c_str(), body.c_str(), icon.empty() ? nullptr : icon.c_str());
+                    if (!spec->key.empty()) {
+                        g_live_by_key[spec->key] = popup.notification;
+                        g_members_by_key[spec->key] = PopupMember{*spec, ++g_member_sequence};
+                    }
+                    GError* error = nullptr;
+                    if (!notify_notification_show(popup.notification, &error)) {
+                        debug::log(ERR, "Failed to update notification: {}", error ? error->message : "unknown");
+                        g_clear_error(&error);
+                    }
+                    return G_SOURCE_REMOVE;
+                }
+            }
+
             NotifyNotification* notification =
                 notify_notification_new(spec->summary.c_str(),
                                         spec->body.empty() ? nullptr : spec->body.c_str(),
@@ -296,13 +396,29 @@ namespace tether {
                 return G_SOURCE_REMOVE;
 
             set_identity(notification, spec->app_name);
-            notify_notification_set_urgency(notification, spec->quiet ? NOTIFY_URGENCY_LOW : NOTIFY_URGENCY_NORMAL);
+            notify_notification_set_urgency(notification,
+                                            spec->quiet    ? NOTIFY_URGENCY_LOW
+                                            : spec->system ? NOTIFY_URGENCY_CRITICAL
+                                                           : NOTIFY_URGENCY_NORMAL);
+            if (spec->resident) {
+                notify_notification_set_hint(notification, "resident", g_variant_new_boolean(TRUE));
+                notify_notification_set_timeout(notification, NOTIFY_EXPIRES_NEVER);
+            }
 
             const AppLauncher launcher = spec->app_id.empty() ? AppLauncher{} : resolve_launcher(spec->app_id);
-            const bool has_actions =
-                !spec->reply_thread.empty() || !spec->otp_code.empty() || !launcher.payload.empty();
-            if (has_actions)
+            // Health notices and file popups are not iPhone apps, so nothing to mute.
+            const bool mutable_app = !spec->app_id.empty() && !spec->system;
+            // The popup object is kept alive, and tracked, for as long as something
+            // might still act on it: a button, a later update, or a withdraw.
+            const bool tracked = true;
+            if (tracked)
                 g_signal_connect(notification, "closed", G_CALLBACK(on_notification_closed), nullptr);
+            if (!spec->key.empty()) {
+                g_live_by_key[spec->key] = notification;
+                g_members_by_key[spec->key] = PopupMember{*spec, ++g_member_sequence};
+            }
+            if (groupable)
+                g_recent_by_app[spec->app_id] = RecentPopup{notification, now, 1, spec->reply_thread};
 
             if (!spec->reply_thread.empty()) {
                 notify_notification_add_action(notification,
@@ -339,15 +455,83 @@ namespace tether {
                                                free_action_data);
             }
 
+            for (const auto& choice : spec->choices) {
+                notify_notification_add_action(notification,
+                                               choice.id.c_str(),
+                                               choice.label.c_str(),
+                                               on_choice_action,
+                                               new ChoiceData{choice.run},
+                                               free_choice_data);
+            }
+
+            if (mutable_app) {
+                // TRANSLATORS: {} is an iPhone app name. Silences its popups on this computer.
+                const std::string label = tr_format(_("Mute {}"), spec->app_name.empty() ? "app" : spec->app_name);
+                notify_notification_add_action(notification,
+                                               "mute-app",
+                                               label.c_str(),
+                                               on_mute_action,
+                                               new NotificationActionData{spec->app_id},
+                                               free_action_data);
+            }
+
             GError* error = nullptr;
             if (!notify_notification_show(notification, &error)) {
                 debug::log(ERR, "Failed to show notification: {}", error ? error->message : "unknown");
                 g_clear_error(&error);
+                forget_live(notification);
                 g_object_unref(notification);
                 return G_SOURCE_REMOVE;
             }
-            if (!has_actions)
-                g_object_unref(notification);
+            return G_SOURCE_REMOVE;
+        }
+
+        gboolean withdraw_on_main(gpointer user_data) {
+            std::unique_ptr<std::string> key(static_cast<std::string*>(user_data));
+            const auto it = g_live_by_key.find(*key);
+            if (it == g_live_by_key.end())
+                return G_SOURCE_REMOVE;
+            NotifyNotification* grouped = it->second;
+            NotifyNotification* notification = detach_notification_key(g_live_by_key, *key);
+            g_members_by_key.erase(*key);
+            if (!notification) {
+                // Show the newest surviving member and the remaining count,
+                // rather than leaving dismissed phone content in the popup.
+                const PopupMember* newest = nullptr;
+                int count = 0;
+                for (const auto& [member_key, popup] : g_live_by_key) {
+                    if (popup != grouped)
+                        continue;
+                    const auto member = g_members_by_key.find(member_key);
+                    if (member == g_members_by_key.end())
+                        continue;
+                    ++count;
+                    if (!newest || member->second.sequence > newest->sequence)
+                        newest = &member->second;
+                }
+                if (newest) {
+                    std::string body = newest->spec.body;
+                    if (count > 1) {
+                        if (!body.empty())
+                            body += "\n";
+                        body += tr_format(P_("{} more notification", "{} more notifications", count - 1), count - 1);
+                    }
+                    const std::string icon = resolve_icon(newest->spec.icons);
+                    notify_notification_update(
+                        grouped, newest->spec.summary.c_str(), body.c_str(), icon.empty() ? nullptr : icon.c_str());
+                    for (auto& [app, popup] : g_recent_by_app)
+                        if (popup.notification == grouped)
+                            popup.count = count;
+                    GError* error = nullptr;
+                    if (!notify_notification_show(grouped, &error)) {
+                        debug::log(ERR, "Failed to update notification: {}", error ? error->message : "unknown");
+                        g_clear_error(&error);
+                    }
+                }
+                return G_SOURCE_REMOVE;
+            }
+            // close emits "closed", which drops the remaining references.
+            notify_notification_close(notification, nullptr);
             return G_SOURCE_REMOVE;
         }
 
@@ -414,10 +598,23 @@ namespace tether {
         g_copy_handler = std::move(handler);
     }
 
-    void DesktopNotifier::notify(const NotificationSpec& spec) {
-        if (!impl_ || !impl_->initialized || !desktop_popups_enabled()) {
+    void DesktopNotifier::set_mute_handler(std::function<void(const std::string& app_id)> handler) {
+        g_mute_handler = std::move(handler);
+    }
+
+    void DesktopNotifier::withdraw(const std::string& key) {
+        if (!impl_ || !impl_->initialized || key.empty())
             return;
-        }
+        g_main_context_invoke_full(impl_->context, G_PRIORITY_DEFAULT, withdraw_on_main, new std::string(key), nullptr);
+    }
+
+    void DesktopNotifier::notify(const NotificationSpec& spec) {
+        if (!impl_ || !impl_->initialized)
+            return;
+        if (!spec.system && !desktop_popups_enabled())
+            return;
+        if (!spec.system && app_muted(spec.app_id))
+            return;
 
         // Bluetooth delivers on its own thread; libnotify's proxy belongs to the
         // notifier's loop.

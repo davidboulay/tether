@@ -1,4 +1,5 @@
 #include "calls_view.hpp"
+#include "toast.hpp"
 #include "contact_completion.hpp"
 #include "daemon_client.hpp"
 #include "ui_util.hpp"
@@ -56,11 +57,8 @@ namespace tether::ui {
             const std::string number = text ? text : "";
             if (number.empty())
                 return;
-            nlohmann::json j;
-            j["command"] = "bt_call_dial";
-            j["number"] = number;
-            daemon_send(j);
-            gtk_entry_set_text(GTK_ENTRY(g_calls.entry), "");
+            if (calls_view_dial(number))
+                gtk_entry_set_text(GTK_ENTRY(g_calls.entry), "");
         }
 
         void attach_path(GtkWidget* button, const std::string& path) {
@@ -198,6 +196,21 @@ namespace tether::ui {
 
     } // namespace
 
+    bool calls_view_dial(const std::string& number) {
+        if (number.empty())
+            return false;
+        nlohmann::json j;
+        j["command"] = "bt_call_dial";
+        j["number"] = number;
+        if (!daemon_send(j)) {
+            show_toast(_("Could not reach the Tether daemon."), ToastLevel::Error);
+            return false;
+        }
+        // TRANSLATORS: {} is a phone number.
+        show_toast(tether::tr_format(_("Calling {}…"), number));
+        return true;
+    }
+
     void calls_view_set_visible(bool visible) {
         g_calls.visible = visible;
         if (!visible)
@@ -234,7 +247,8 @@ namespace tether::ui {
             set_text(g_calls.status_label,
                      g_calls.available
                          ? std::string(_("No calls.")) + (reason.empty() ? "" : "\n" + reason)
-                         : (reason.empty() ? _("Call control is off. Turn it on with 'tether --bt-calls-enable on'.")
+                         : (reason.empty() ? _("Call control is off. Turn it on under Settings > Experimental > "
+                                               "Call control over Bluetooth.")
                                            : reason));
             if (g_calls.visible)
                 request_calls();

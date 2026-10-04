@@ -11,6 +11,13 @@ TEST(ClipboardMimeTest, TextWinsOverImage) {
     EXPECT_EQ(tether::pick_clipboard_mime({"text/html", "image/jpeg"}), "");
 }
 
+TEST(ClipboardMimeTest, PasswordManagerHintMarksSensitive) {
+    EXPECT_TRUE(tether::clipboard_is_sensitive({"text/plain", "x-kde-passwordManagerHint"}));
+    EXPECT_TRUE(tether::clipboard_is_sensitive({"x-kde-passwordManagerHint"}));
+    EXPECT_FALSE(tether::clipboard_is_sensitive({"text/plain;charset=utf-8", "text/html"}));
+    EXPECT_FALSE(tether::clipboard_is_sensitive({}));
+}
+
 TEST(ClipboardImageTest, ChunksReassembleToTheOriginal) {
     std::string png(1300 * 1024, '\0');
     for (size_t i = 0; i < png.size(); ++i)

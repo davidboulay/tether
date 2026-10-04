@@ -14,11 +14,20 @@ let extractedOtp = null;
 
 vi.mock('../src/shared/native.js', () => ({
   connectToNativeHost: vi.fn(),
+  reconnectNativeHost: vi.fn(),
   sendToNativeHost: vi.fn((msg) => {
     if (msg.command === 'new_otp') {
       extractedOtp = msg.otp;
     }
-  })
+  }),
+  registerOtpRequest: vi.fn(),
+  clearOtpRequest: vi.fn(),
+  getHostState: vi.fn(() => ({ state: 'unknown', error: '' })),
+  onHostStateChange: vi.fn(() => () => {}),
+  getLastOtp: vi.fn(() => null),
+  clearLastOtp: vi.fn(),
+  onOtpReceived: vi.fn(() => () => {}),
+  registrableDomain: vi.fn((h) => String(h || '').split('.').slice(-2).join('.')),
 }));
 
 const mockPort = {

@@ -1,5 +1,6 @@
 #include <gtk-layer-shell.h>
 #include <gtk/gtk.h>
+#include <gio/gio.h>
 
 #include "../core/include/tether/log.hpp"
 #include <cstdlib>
@@ -45,13 +46,16 @@ static void print_usage(const char* argv0) {
                argv0);
 }
 
+// Theme colours only: the prompt follows the GTK theme, light or dark, and a
+// high-contrast theme keeps its contrast. The buttons are stock GTK buttons,
+// with Accept marked as the suggested action the way the theme draws it.
 static const char* CSS = R"(
     window {
         background-color: transparent;
     }
     .dialog-frame {
-        background-color: rgba(24, 24, 32, 0.92);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        background-color: @theme_bg_color;
+        border: 1px solid alpha(@theme_fg_color, 0.25);
         border-radius: 16px;
         padding: 28px 32px;
         margin: 12px;
@@ -59,45 +63,66 @@ static const char* CSS = R"(
     .dialog-title {
         font-size: 16px;
         font-weight: 700;
-        color: #e8e8ef;
+        color: @theme_fg_color;
         margin-bottom: 10px;
     }
     .dialog-body {
         font-size: 13px;
-        color: #a0a0b0;
+        color: alpha(@theme_fg_color, 0.8);
         margin-bottom: 22px;
     }
     .dialog-btn-row {
         margin-top: 4px;
     }
-    .btn-accept {
-        background: linear-gradient(135deg, #6366f1, #818cf8);
-        color: white;
-        border: none;
-        border-radius: 8px;
+    .btn-accept, .btn-reject {
         padding: 8px 22px;
-        font-weight: 600;
-        font-size: 13px;
         min-width: 90px;
-    }
-    .btn-accept:hover {
-        background: linear-gradient(135deg, #4f46e5, #6366f1);
-    }
-    .btn-reject {
-        background-color: rgba(255, 255, 255, 0.06);
-        color: #a0a0b0;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
-        padding: 8px 22px;
-        font-weight: 600;
-        font-size: 13px;
-        min-width: 90px;
-    }
-    .btn-reject:hover {
-        background-color: rgba(255, 255, 255, 0.12);
-        color: #e8e8ef;
     }
 )";
+
+// xdg-desktop-portal Settings: 0 = no preference, 1 = dark, 2 = light. A
+// one-shot prompt reads it once; it is gone before the setting can change.
+static void follow_system_color_scheme() {
+    if (g_getenv("GTK_THEME"))
+        return;
+    GError* error = nullptr;
+    GDBusProxy* proxy = g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SESSION,
+                                                      G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES,
+                                                      nullptr,
+                                                      "org.freedesktop.portal.Desktop",
+                                                      "/org/freedesktop/portal/desktop",
+                                                      "org.freedesktop.portal.Settings",
+                                                      nullptr,
+                                                      &error);
+    if (!proxy) {
+        g_clear_error(&error);
+        return;
+    }
+    GVariant* result = g_dbus_proxy_call_sync(proxy,
+                                              "Read",
+                                              g_variant_new("(ss)", "org.freedesktop.appearance", "color-scheme"),
+                                              G_DBUS_CALL_FLAGS_NONE,
+                                              500,
+                                              nullptr,
+                                              &error);
+    if (result) {
+        GVariant* outer = nullptr;
+        g_variant_get(result, "(v)", &outer);
+        GVariant* inner = g_variant_get_variant(outer);
+        if (g_variant_is_of_type(inner, G_VARIANT_TYPE_UINT32)) {
+            const guint32 scheme = g_variant_get_uint32(inner);
+            if (scheme == 1 || scheme == 2) {
+                if (GtkSettings* settings = gtk_settings_get_default())
+                    g_object_set(settings, "gtk-application-prefer-dark-theme", scheme == 1 ? TRUE : FALSE, nullptr);
+            }
+        }
+        g_variant_unref(inner);
+        g_variant_unref(outer);
+        g_variant_unref(result);
+    }
+    g_clear_error(&error);
+    g_object_unref(proxy);
+}
 
 int main(int argc, char** argv) {
     std::string title, body, accept_label, reject_label;
@@ -131,6 +156,8 @@ int main(int argc, char** argv) {
         debug::log(ERR, "Error: no display available.\n");
         return 3;
     }
+
+    follow_system_color_scheme();
 
     // Apply CSS
     GtkCssProvider* css_provider = gtk_css_provider_new();
@@ -197,6 +224,7 @@ int main(int argc, char** argv) {
 
     GtkWidget* btn_accept = gtk_button_new_with_label(accept_label.c_str());
     gtk_style_context_add_class(gtk_widget_get_style_context(btn_accept), "btn-accept");
+    gtk_style_context_add_class(gtk_widget_get_style_context(btn_accept), "suggested-action");
     g_signal_connect(btn_accept, "clicked", G_CALLBACK(on_accept), NULL);
     gtk_box_pack_start(GTK_BOX(btn_row), btn_accept, FALSE, FALSE, 0);
 

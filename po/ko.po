@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-10-02 19:39-0700\n"
+"POT-Creation-Date: 2026-10-04 13:09+0200\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Korean\n"
@@ -25,6 +25,35 @@ msgstr "예"
 #: src/cli/main.cpp
 msgid "no"
 msgstr "아니오"
+
+#: src/cli/main.cpp
+msgid "Could not reach the daemon."
+msgstr "데몬에 연결하지 못했습니다."
+
+#: src/cli/main.cpp
+msgid "The daemon did not answer in time."
+msgstr "데몬이 제시간에 응답하지 않았습니다."
+
+#: src/cli/main.cpp
+msgid "The daemon closed the connection before answering."
+msgstr "데몬이 응답하기 전에 연결을 닫았습니다."
+
+#: src/cli/main.cpp
+msgid "The daemon does not know this command; it may be an older tetherd."
+msgstr "데몬이 이 명령을 알지 못합니다. 이전 버전의 tetherd일 수 있습니다."
+
+#: src/cli/main.cpp
+msgid "The daemon sent an unreadable reply."
+msgstr "데몬이 읽을 수 없는 응답을 보냈습니다."
+
+#: src/cli/main.cpp
+msgid "The daemon did not confirm the change; it may be an older tetherd.\n"
+msgstr ""
+"데몬이 변경을 확인하지 않았습니다. 이전 버전의 tetherd일 수 있습니다.\n"
+
+#: src/cli/main.cpp
+msgid "The daemon did not apply the change.\n"
+msgstr "데몬이 변경을 적용하지 않았습니다.\n"
 
 #: src/cli/main.cpp
 msgid "Show this help message."
@@ -264,12 +293,42 @@ msgid "Accept a pending pairing request locally."
 msgstr "대기 중인 페어링 요청을 로컬에서 수락합니다."
 
 #: src/cli/main.cpp
+msgid "Turn down a pending pairing request, and tell the other device so."
+msgstr "대기 중인 페어링 요청을 거부하고 상대 기기에 알립니다."
+
+#: src/cli/main.cpp
 msgid "Remove a Wi-Fi pairing and drop its session."
 msgstr "Wi-Fi 페어링을 제거하고 해당 세션을 종료합니다."
 
 #: src/cli/main.cpp
 msgid "Send a pair_request over TCP to the daemon."
 msgstr "TCP로 데몬에 pair_request를 보냅니다."
+
+#: src/cli/main.cpp
+msgid ""
+"Pause or resume sending this computer's clipboard to the iPhone, or show "
+"which it is."
+msgstr ""
+"이 컴퓨터의 클립보드를 iPhone으로 보내는 것을 일시 중지하거나 다시 시작하거"
+"나, 현재 상태를 표시합니다."
+
+#: src/cli/main.cpp
+msgid ""
+"Stop showing desktop popups from one iPhone app, named by its bundle id, or "
+"list the muted apps."
+msgstr ""
+"번들 ID로 지정한 iPhone 앱 하나의 데스크톱 팝업을 더 이상 표시하지 않거나, 음"
+"소거된 앱을 나열합니다."
+
+#: src/cli/main.cpp
+msgid "Show desktop popups from a muted iPhone app again."
+msgstr "음소거된 iPhone 앱의 데스크톱 팝업을 다시 표시합니다."
+
+#: src/cli/main.cpp
+msgid ""
+"Print the daemon's reply as JSON instead of text, on the commands that read "
+"state."
+msgstr "상태를 읽는 명령에서 데몬의 응답을 텍스트 대신 JSON으로 출력합니다."
 
 #: src/cli/main.cpp
 msgid "tether - Wayland companion CLI"
@@ -290,6 +349,10 @@ msgstr "모든 --bt-<name> 플래그를 하위 명령으로."
 #: src/cli/main.cpp
 msgid "Examples:"
 msgstr "예제:"
+
+#: src/cli/main.cpp
+msgid "Shell completion: tether --print-completions <bash|zsh|fish>"
+msgstr "셸 자동 완성: tether --print-completions <bash|zsh|fish>"
 
 #: src/cli/main.cpp
 #, c-format
@@ -366,10 +429,10 @@ msgstr[0] ""
 #, c-format
 msgid ""
 "\n"
-"Re-run 'tether --bt-setup' afterwards to confirm.\n"
+"Re-run 'tether bt setup' afterwards to confirm.\n"
 msgstr ""
 "\n"
-"그 후 확인을 위해 'tether --bt-setup'을 다시 실행하십시오.\n"
+"그 후 확인을 위해 'tether bt setup'을 다시 실행하십시오.\n"
 
 #: src/cli/main.cpp
 msgid "Mode"
@@ -418,8 +481,8 @@ msgid "mirroring on"
 msgstr "미러링 켬"
 
 #: src/cli/main.cpp
-msgid "mirroring off (tether --bt-ancs on)"
-msgstr "미러링 끔 (tether --bt-ancs on)"
+msgid "mirroring off (tether bt ancs on)"
+msgstr "미러링 끔 (tether bt ancs on)"
 
 #: src/cli/main.cpp src/daemon/main.cpp src/gtk/main.cpp
 #: src/gtk/tether-gtk.desktop.in
@@ -431,8 +494,8 @@ msgid "connecting"
 msgstr "연결 중"
 
 #: src/cli/main.cpp
-msgid "off (--bt-enable on)"
-msgstr "꺼짐 (--bt-enable on)"
+msgid "off (tether bt enable on)"
+msgstr "꺼짐 (tether bt enable on)"
 
 #: src/cli/main.cpp
 msgid "History"
@@ -441,10 +504,10 @@ msgstr "기록"
 #: src/cli/main.cpp
 msgid ""
 "paused - the desktop keyring has no key to offer yet.\n"
-"Unlock it, or run 'tether --bt-retention plaintext'."
+"Unlock it, or run 'tether bt retention plaintext'."
 msgstr ""
 "일시 중지됨 - 데스크톱 키링에 아직 키가 없습니다.\n"
-"키링을 잠금 해제하거나 'tether --bt-retention plaintext'를 실행하세요."
+"키링을 잠금 해제하거나 'tether bt retention plaintext'를 실행하십시오."
 
 #: src/cli/main.cpp
 msgid "in use"
@@ -459,13 +522,13 @@ msgstr "어댑터 {}이(가) 없습니다. 전원이 켜진 첫 번째 어댑터
 #, c-format
 msgid ""
 "\n"
-"%zu setup step remaining. Run: tether --bt-setup\n"
+"%zu setup step remaining. Run: tether bt setup\n"
 msgid_plural ""
 "\n"
-"%zu setup steps remaining. Run: tether --bt-setup\n"
+"%zu setup steps remaining. Run: tether bt setup\n"
 msgstr[0] ""
 "\n"
-"설정 단계가 %zu개 남았습니다. 실행: tether --bt-setup\n"
+"설정 단계가 %zu개 남았습니다. 실행: tether bt setup\n"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth devices from the daemon.\n"
@@ -514,10 +577,6 @@ msgstr ""
 "깁니다. /etc/bluetooth/main.conf의 DeviceID를 참고하세요."
 
 #: src/cli/main.cpp
-msgid "Could not reach the daemon.\n"
-msgstr "데몬에 연결하지 못했습니다.\n"
-
-#: src/cli/main.cpp
 #, c-format
 msgid "Listening mode set to %s.\n"
 msgstr "청취 모드를 %s(으)로 설정했습니다.\n"
@@ -531,9 +590,9 @@ msgid "Use never, one-removed or both-removed.\n"
 msgstr "never, one-removed 또는 both-removed 중에서 선택하세요.\n"
 
 #: src/cli/main.cpp
-#, c-format
-msgid "Pause on removal set to %s.\n"
-msgstr "제거 시 일시정지를 %s(으)로 설정했습니다.\n"
+#, c++-format
+msgid "Pause on removal set to {}."
+msgstr "제거 시 일시정지를 {}(으)로 설정했습니다."
 
 #: src/cli/main.cpp
 msgid "Use on or off.\n"
@@ -564,6 +623,10 @@ msgstr "iPhone이 범위를 벗어나면 세션을 잠급니다."
 #: src/cli/main.cpp
 msgid "Locking on the iPhone going out of range is off."
 msgstr "iPhone이 범위를 벗어날 때 잠그는 기능이 꺼져 있습니다."
+
+#: src/cli/main.cpp
+msgid "Could not reach the daemon.\n"
+msgstr "데몬에 연결하지 못했습니다.\n"
 
 #: src/cli/main.cpp
 msgid "Daemon closed the connection before the operation finished.\n"
@@ -648,8 +711,8 @@ msgstr "데몬에서 통화를 읽을 수 없습니다.\n"
 
 #: src/cli/main.cpp
 #, c-format
-msgid "No calls. Check 'tether --bt-connection'.\n"
-msgstr "통화가 없습니다. 'tether --bt-connection'을 확인하십시오.\n"
+msgid "No calls. Check 'tether bt connection'.\n"
+msgstr "통화가 없습니다. 'tether bt connection'을 확인하십시오.\n"
 
 #: src/cli/main.cpp
 msgid "withheld"
@@ -661,8 +724,8 @@ msgstr "데몬에서 알림을 읽지 못했습니다.\n"
 
 #: src/cli/main.cpp
 #, c-format
-msgid "No notifications yet. Check 'tether --bt-connection'.\n"
-msgstr "아직 알림이 없습니다. 'tether --bt-connection'을 확인하십시오.\n"
+msgid "No notifications yet. Check 'tether bt connection'.\n"
+msgstr "아직 알림이 없습니다. 'tether bt connection'을 확인하십시오.\n"
 
 #: src/cli/main.cpp
 msgid "Could not read conversations from the daemon.\n"
@@ -670,8 +733,8 @@ msgstr "데몬에서 대화를 읽지 못했습니다.\n"
 
 #: src/cli/main.cpp
 #, c-format
-msgid "No conversations yet. Check 'tether --bt-connection'.\n"
-msgstr "아직 대화가 없습니다. 'tether --bt-connection'을 확인하십시오.\n"
+msgid "No conversations yet. Check 'tether bt connection'.\n"
+msgstr "아직 대화가 없습니다. 'tether bt connection'을 확인하십시오.\n"
 
 #: src/cli/main.cpp
 #, c++-format
@@ -679,16 +742,10 @@ msgid "({} unread)"
 msgid_plural "({} unread)"
 msgstr[0] "(읽지 않음 {}개)"
 
-#: src/cli/main.cpp src/gtk/devices_view.cpp
+#: src/cli/main.cpp
 #, c++-format
-msgid ""
-"The running tetherd is {}, but this is tether {}. Stop it and it\n"
-"restarts on demand:\n"
-"    pkill tetherd\n"
-msgstr ""
-"실행 중인 tetherd는 {}이지만 이것은 tether {}입니다. 중지하면 필요할 때 다시 "
-"시작됩니다:\n"
-"    pkill tetherd\n"
+msgid "The running tetherd is {}, but this is tether {}. {}\n"
+msgstr "실행 중인 tetherd는 {}이지만 이것은 tether {}입니다. {}\n"
 
 #: src/cli/main.cpp src/gtk/devices_view.cpp
 msgid "an older build"
@@ -700,8 +757,8 @@ msgstr "데몬에서 연락처를 읽지 못했습니다.\n"
 
 #: src/cli/main.cpp
 #, c-format
-msgid "No contacts yet. Check 'tether --bt-connection'.\n"
-msgstr "아직 연락처가 없습니다. 'tether --bt-connection'을 확인하십시오.\n"
+msgid "No contacts yet. Check 'tether bt connection'.\n"
+msgstr "아직 연락처가 없습니다. 'tether bt connection'을 확인하십시오.\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -754,7 +811,7 @@ msgstr "데몬"
 msgid "running"
 msgstr "실행 중"
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gtk/settings_view.cpp
 msgid "Clipboard"
 msgstr "클립보드"
 
@@ -810,10 +867,10 @@ msgstr "최근에 받은 항목:"
 #, c-format
 msgid ""
 "\n"
-"Run 'tether --pending' to see what is waiting to be accepted.\n"
+"Run 'tether pending' to see what is waiting to be accepted.\n"
 msgstr ""
 "\n"
-"수락을 기다리는 항목을 보려면 'tether --pending'을 실행하세요.\n"
+"수락을 기다리는 항목을 보려면 'tether pending'을 실행하십시오.\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -824,10 +881,12 @@ msgstr "대기 중인 페어링 요청이 없습니다.\n"
 #, c-format
 msgid ""
 "\n"
-"Accept one with: tether --accept <fingerprint>\n"
+"Accept one with: tether accept <fingerprint>\n"
+"Turn one down with: tether reject <fingerprint>\n"
 msgstr ""
 "\n"
-"다음 명령으로 수락하세요: tether --accept <fingerprint>\n"
+"수락하려면: tether accept <fingerprint>\n"
+"거부하려면: tether reject <fingerprint>\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -885,6 +944,14 @@ msgstr ""
 "'systemctl --user daemon-reload'을 실행하여 잊게 하세요.\n"
 
 #: src/cli/main.cpp
+msgid "Run 'tether --help'."
+msgstr "'tether --help'를 실행하십시오."
+
+#: src/cli/main.cpp
+msgid "tether: 'bt' needs a name, e.g. tether bt setup"
+msgstr "tether: 'bt'에는 이름이 필요합니다. 예: tether bt setup"
+
+#: src/cli/main.cpp
 msgid "--port expects a number.\n"
 msgstr "--port에는 숫자를 지정해야 합니다.\n"
 
@@ -892,13 +959,33 @@ msgstr "--port에는 숫자를 지정해야 합니다.\n"
 msgid "--timeout expects a number in milliseconds.\n"
 msgstr "--timeout에는 밀리초 단위의 숫자를 지정해야 합니다.\n"
 
+#. TRANSLATORS: {} is the argument as typed.
 #: src/cli/main.cpp
-msgid "Unknown action. Run tether --help for options\n"
-msgstr "알 수 없는 동작입니다. 옵션을 보려면 tether --help를 실행하십시오\n"
+#, c++-format
+msgid "tether: unknown option '{}'"
+msgstr "tether: 알 수 없는 옵션 '{}'"
 
 #: src/cli/main.cpp
-msgid "  No tetherd instances found.\n"
-msgstr "  tetherd 인스턴스를 찾지 못했습니다.\n"
+#, c++-format
+msgid "tether: unknown command '{}'"
+msgstr "tether: 알 수 없는 명령 '{}'"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "tether: unexpected argument '{}'"
+msgstr "tether: 예상치 못한 인수 '{}'"
+
+#: src/cli/main.cpp
+msgid "tether: no command given"
+msgstr "tether: 명령이 지정되지 않았습니다"
+
+#: src/cli/main.cpp
+msgid "Scanning for tetherd instances on the local network..."
+msgstr "로컬 네트워크에서 tetherd 인스턴스를 검색하는 중..."
+
+#: src/cli/main.cpp
+msgid "  No tetherd instances found."
+msgstr "  tetherd 인스턴스를 찾지 못했습니다."
 
 #: src/cli/main.cpp
 msgid "[new]"
@@ -915,30 +1002,35 @@ msgid_plural "Found %zu devices in %.1fs\n"
 msgstr[0] "%2$.1f초 만에 기기 %1$zu대를 찾았습니다\n"
 
 #: src/cli/main.cpp
-msgid ""
-"The daemon is not running, and could not be started. Check the log in "
-"$XDG_STATE_HOME/tether, or start it with 'systemctl --user start "
-"tetherd.service'.\n"
-msgstr ""
-"데몬이 실행 중이 아니며 시작할 수도 없었습니다. $XDG_STATE_HOME/tether의 로그"
-"를 확인하거나 'systemctl --user start tetherd.service'로 시작하십시오.\n"
+#, c++-format
+msgid "No daemon answered at {}:{}."
+msgstr "{}:{}에서 응답한 데몬이 없습니다."
+
+#: src/cli/main.cpp
+msgid "tether: accept needs a fingerprint, see 'tether pending'"
+msgstr "tether: accept에는 지문이 필요합니다. 'tether pending'을 참고하십시오"
 
 #: src/cli/main.cpp
 #, c++-format
-msgid "No daemon answered at {}:{}.\n"
-msgstr "{}:{}에서 응답한 데몬이 없습니다.\n"
+msgid "Paired {}."
+msgstr "{}와(과) 페어링했습니다."
 
 #: src/cli/main.cpp
-msgid ""
-"Explicit framework connection locally rejected! Did you target explicitly "
-"invalid TLS or is daemon broken?\n"
-msgstr ""
-"명시적 프레임워크 연결이 로컬에서 거부되었습니다! 명백히 잘못된 TLS를 지정했"
-"거나 데몬이 손상되었습니까?\n"
+msgid "tether: reject needs a fingerprint, see 'tether pending'"
+msgstr "tether: reject에는 지문이 필요합니다. 'tether pending'을 참고하십시오"
 
 #: src/cli/main.cpp
-msgid "--forget expects a fingerprint.\n"
-msgstr "--forget에는 지문을 지정해야 합니다.\n"
+msgid "No pairing request from that fingerprint is waiting.\n"
+msgstr "해당 지문의 대기 중인 페어링 요청이 없습니다.\n"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Rejected {}."
+msgstr "{}을(를) 거부했습니다."
+
+#: src/cli/main.cpp
+msgid "tether: forget needs a fingerprint, see 'tether devices'"
+msgstr "tether: forget에는 지문이 필요합니다. 'tether devices'를 참고하십시오"
 
 #: src/cli/main.cpp
 msgid "No paired device with that fingerprint.\n"
@@ -946,12 +1038,72 @@ msgstr "해당 지문을 가진 페어링된 기기가 없습니다.\n"
 
 #: src/cli/main.cpp
 #, c++-format
+msgid "Forgot {}."
+msgstr "{}을(를) 삭제했습니다."
+
+#: src/cli/main.cpp
+msgid "tether: send needs a file path"
+msgstr "tether: send에는 파일 경로가 필요합니다"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Sending {}..."
+msgstr "{} 보내는 중..."
+
+#: src/cli/main.cpp
+#, c++-format
 msgid "Transfer Failed: {}"
 msgstr "전송 실패: {}"
 
 #: src/cli/main.cpp
-msgid "A number is required, e.g. --bt-call +15551234567\n"
-msgstr "번호가 필요합니다. 예: --bt-call +15551234567\n"
+msgid "File transfer delivered."
+msgstr "파일 전송이 완료되었습니다."
+
+#: src/cli/main.cpp
+msgid "Clipboard sync is on: what you copy here goes to the iPhone."
+msgstr ""
+"클립보드 동기화가 켜져 있습니다. 여기서 복사한 내용이 iPhone으로 전송됩니다."
+
+#: src/cli/main.cpp
+msgid "Clipboard sync is paused: nothing copied here leaves this computer."
+msgstr ""
+"클립보드 동기화가 일시 중지되어 있습니다. 여기서 복사한 내용은 이 컴퓨터를 벗"
+"어나지 않습니다."
+
+#: src/cli/main.cpp
+msgid "tether: clipboard takes on, off or status"
+msgstr "tether: clipboard에는 on, off 또는 status를 지정합니다"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Clipboard sync: {}"
+msgstr "클립보드 동기화: {}"
+
+#: src/cli/main.cpp
+msgid "on"
+msgstr "켬"
+
+#: src/cli/main.cpp
+msgid "off"
+msgstr "끔"
+
+#: src/cli/main.cpp
+msgid "No iPhone app is muted."
+msgstr "음소거된 iPhone 앱이 없습니다."
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Desktop popups from {} are muted."
+msgstr "{}의 데스크톱 팝업을 음소거했습니다."
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Desktop popups from {} are back."
+msgstr "{}의 데스크톱 팝업을 다시 표시합니다."
+
+#: src/cli/main.cpp
+msgid "A number is required, e.g. tether bt call +15551234567"
+msgstr "번호가 필요합니다. 예: tether bt call +15551234567"
 
 #: src/cli/main.cpp
 msgid "Dialing."
@@ -974,8 +1126,8 @@ msgid "Hanging up."
 msgstr "전화를 끊는 중입니다."
 
 #: src/cli/main.cpp
-msgid "Expected on or off, e.g. --bt-calls-enable on\n"
-msgstr "on 또는 off가 필요합니다. 예: --bt-calls-enable on\n"
+msgid "Expected on or off, e.g. tether bt calls-enable on"
+msgstr "on 또는 off가 필요합니다. 예: tether bt calls-enable on"
 
 #: src/cli/main.cpp
 msgid "Call control enabled."
@@ -986,41 +1138,40 @@ msgid "Call control disabled."
 msgstr "통화 제어를 껐습니다."
 
 #: src/cli/main.cpp
-msgid "A thread key is required, e.g. --bt-messages tel:+15551234567\n"
-msgstr "대화 키가 필요합니다. 예: --bt-messages tel:+15551234567\n"
+msgid "A thread key is required, e.g. tether bt messages tel:+15551234567"
+msgstr "대화 키가 필요합니다. 예: tether bt messages tel:+15551234567"
 
 #: src/cli/main.cpp
 msgid ""
-"A conversation and a message are required, e.g. --bt-send tel:+15551234567 "
-"\"hi\"\n"
-msgstr "대화와 메시지가 필요합니다. 예: --bt-send tel:+15551234567 \"안녕\"\n"
+"A conversation and a message are required, e.g. tether bt send tel:"
+"+15551234567 \"hi\""
+msgstr ""
+"대화와 메시지가 필요합니다. 예: tether bt send tel:+15551234567 \"안녕\""
 
 #: src/cli/main.cpp
-msgid "A Bluetooth address is required, e.g. --bt-pair AA:BB:CC:DD:EE:FF\n"
-msgstr "Bluetooth 주소가 필요합니다. 예: --bt-pair AA:BB:CC:DD:EE:FF\n"
+msgid "A Bluetooth address is required, e.g. tether bt pair AA:BB:CC:DD:EE:FF"
+msgstr "Bluetooth 주소가 필요합니다. 예: tether bt pair AA:BB:CC:DD:EE:FF"
 
 #: src/cli/main.cpp
-msgid "Expected on or off, e.g. --bt-enable off\n"
-msgstr "on 또는 off가 필요합니다. 예: --bt-enable off\n"
+msgid "Expected on or off, e.g. tether bt enable off"
+msgstr "on 또는 off가 필요합니다. 예: tether bt enable off"
 
 #: src/cli/main.cpp
-#, c-format
-msgid "Bluetooth enabled.\n"
-msgstr "Bluetooth를 켰습니다.\n"
+msgid "Bluetooth enabled."
+msgstr "Bluetooth를 켰습니다."
 
 #: src/cli/main.cpp
-#, c-format
 msgid ""
 "Bluetooth disabled. Tether will not reconnect the iPhone. A link that is\n"
-"already up stays up until you disconnect it or the phone goes out of range.\n"
+"already up stays up until you disconnect it or the phone goes out of range."
 msgstr ""
 "Bluetooth를 껐습니다. Tether는 iPhone에 다시 연결하지 않습니다. 이미 연결된\n"
-"링크는 연결을 끊거나 iPhone이 범위를 벗어날 때까지 유지됩니다.\n"
+"링크는 연결을 끊거나 iPhone이 범위를 벗어날 때까지 유지됩니다."
 
 #: src/cli/main.cpp
 #, c++-format
-msgid "Expected on or off, e.g. {} on\n"
-msgstr "on 또는 off가 필요합니다. 예: {} on\n"
+msgid "Expected on or off, e.g. tether bt {} on"
+msgstr "on 또는 off가 필요합니다. 예: tether bt {} on"
 
 #: src/cli/main.cpp
 msgid "Notification contents enabled."
@@ -1039,23 +1190,26 @@ msgid "Notification mirroring disabled."
 msgstr "알림 미러링을 껐습니다."
 
 #: src/cli/main.cpp
-msgid "Expected encrypted, plaintext or none, e.g. --bt-retention encrypted\n"
+msgid ""
+"Expected encrypted, plaintext or none, e.g. tether bt retention encrypted"
 msgstr ""
-"encrypted, plaintext 또는 none이 필요합니다. 예: --bt-retention encrypted\n"
+"encrypted, plaintext 또는 none이 필요합니다. 예: tether bt retention "
+"encrypted"
 
 #: src/cli/main.cpp
-#, c-format
-msgid "Deleting stored messages and contacts.\n"
-msgstr "저장된 메시지와 연락처를 삭제하는 중입니다.\n"
+msgid "Deleting stored messages and contacts."
+msgstr "저장된 메시지와 연락처를 삭제하는 중입니다."
 
 #: src/cli/main.cpp
-#, c-format
-msgid "Retention set to %s.\n"
-msgstr "보관 방식을 %s(으)로 설정했습니다.\n"
+#, c++-format
+msgid "Retention set to {}."
+msgstr "보관 방식을 {}(으)로 설정했습니다."
 
 #: src/cli/main.cpp
-msgid "Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"
-msgstr "어댑터를 지정하세요. 예: --bt-adapter hci1 또는 --bt-adapter auto\n"
+msgid ""
+"Expected a controller, e.g. tether bt adapter hci1, or tether bt adapter auto"
+msgstr ""
+"어댑터를 지정하십시오. 예: tether bt adapter hci1 또는 tether bt adapter auto"
 
 #: src/cli/main.cpp
 #, c++-format
@@ -1063,9 +1217,8 @@ msgid "No Bluetooth controller matches '{}'. Available:\n"
 msgstr "'{}'와(과) 일치하는 Bluetooth 어댑터가 없습니다. 사용 가능:\n"
 
 #: src/cli/main.cpp
-#, c-format
-msgid "Controller selection is automatic: the first powered one.\n"
-msgstr "어댑터 선택은 자동입니다. 전원이 켜진 첫 번째 어댑터를 사용합니다.\n"
+msgid "Controller selection is automatic: the first powered one."
+msgstr "어댑터 선택은 자동입니다. 전원이 켜진 첫 번째 어댑터를 사용합니다."
 
 #: src/cli/main.cpp
 #, c++-format
@@ -1382,6 +1535,7 @@ msgid "Confirm"
 msgstr "확인"
 
 #: src/core/src/bluetooth/pairing.cpp src/gtk/messages_view.cpp
+#: src/gtk/settings_view.cpp
 msgid "Cancel"
 msgstr "취소"
 
@@ -1437,7 +1591,8 @@ msgstr "페어링이 완료되지 않았습니다. iPhone의 확인 창에서 �
 msgid "Pairing failed: {}"
 msgstr "페어링 실패: {}"
 
-#: src/core/src/bluetooth/pairing.cpp
+#. TRANSLATORS: {} is a device name.
+#: src/core/src/bluetooth/pairing.cpp src/gtk/devices_view.cpp
 #, c++-format
 msgid "Paired with {}."
 msgstr "{}와(과) 페어링했습니다."
@@ -1670,7 +1825,8 @@ msgstr "보내기 실패: {}"
 msgid "unknown error"
 msgstr "알 수 없는 오류"
 
-#: src/core/src/net.cpp src/gtk/devices_view.cpp src/gtk/messages_view.cpp
+#: src/core/src/net.cpp src/gtk/calls_view.cpp src/gtk/devices_view.cpp
+#: src/gtk/messages_view.cpp
 msgid "Could not reach the Tether daemon."
 msgstr "Tether 데몬에 연결하지 못했습니다."
 
@@ -1684,13 +1840,80 @@ msgstr "{0}({1})이(가) 이 기기와 페어링을 요청합니다."
 msgid "Pairing Request"
 msgstr "페어링 요청"
 
-#: src/core/src/net.cpp
+#: src/core/src/net.cpp src/daemon/main.cpp src/gtk/devices_view.cpp
 msgid "Accept"
 msgstr "수락"
 
-#: src/core/src/net.cpp
+#: src/core/src/net.cpp src/daemon/main.cpp src/gtk/devices_view.cpp
 msgid "Reject"
 msgstr "거부"
+
+#: src/daemon/main.cpp
+#, c++-format
+msgid "Details: {}"
+msgstr "세부 정보: {}"
+
+#: src/daemon/main.cpp
+msgid "Tether could not start"
+msgstr "Tether를 시작하지 못했습니다"
+
+#: src/daemon/main.cpp
+msgid ""
+"Its TLS identity could not be created or read. Check ~/.config/tether/"
+"cert.pem and key.pem, or move them away to make new ones."
+msgstr ""
+"TLS 신원 정보를 만들거나 읽지 못했습니다. ~/.config/tether/cert.pem 및 "
+"key.pem을 확인하거나, 다른 곳으로 옮겨서 새로 만들게 하십시오."
+
+#: src/daemon/main.cpp
+msgid ""
+"Its command socket could not be created under $XDG_RUNTIME_DIR. Is another "
+"tetherd running, or the runtime directory missing?"
+msgstr ""
+"$XDG_RUNTIME_DIR 아래에 명령 소켓을 만들지 못했습니다. 다른 tetherd가 실행 중"
+"이거나 런타임 디렉터리가 없는 것은 아닙니까?"
+
+#: src/daemon/main.cpp
+msgid ""
+"Port 5134 is already in use, so the iPhone cannot connect. Another tetherd, "
+"or another program, holds it. Find it with: ss -ltnp 'sport = :5134'"
+msgstr ""
+"포트 5134가 이미 사용 중이어서 iPhone이 연결할 수 없습니다. 다른 tetherd 또"
+"는 다른 프로그램이 점유하고 있습니다. 다음 명령으로 찾으십시오: ss -ltnp "
+"'sport = :5134'"
+
+#: src/daemon/main.cpp
+msgid "Clipboard sync is off"
+msgstr "클립보드 동기화 꺼짐"
+
+#: src/daemon/main.cpp
+msgid ""
+"This compositor does not offer the data-control protocol Tether needs, so "
+"the clipboard will not follow the iPhone. Files, messages and notifications "
+"still work."
+msgstr ""
+"이 컴포지터는 Tether에 필요한 data-control 프로토콜을 제공하지 않으므로 클립"
+"보드가 iPhone과 동기화되지 않습니다. 파일, 메시지, 알림은 계속 동작합니다."
+
+#: src/daemon/main.cpp
+msgid "Pairing request waiting"
+msgstr "페어링 요청 대기 중"
+
+#: src/daemon/main.cpp
+#, c++-format
+msgid ""
+"{} asked to pair with this computer and the prompt timed out. It stays "
+"pending for an hour; answer here or in the Devices tab."
+msgstr ""
+"{}이(가) 이 컴퓨터와 페어링을 요청했지만 확인 창의 시간이 초과되었습니다. 요"
+"청은 한 시간 동안 대기 상태로 남습니다. 여기서 또는 기기 탭에서 응답하십시오."
+
+#: src/daemon/main.cpp
+#, c++-format
+msgid "{} asked to pair with this computer. Answer here or in the Devices tab."
+msgstr ""
+"{}이(가) 이 컴퓨터와 페어링을 요청했습니다. 여기서 또는 기기 탭에서 응답하십"
+"시오."
 
 #: src/daemon/main.cpp
 msgid "This PC can't be discovered"
@@ -1703,6 +1926,18 @@ msgid ""
 msgstr ""
 "avahi-daemon이 실행되고 있지 않아 Tether가 네트워크에 자신을 알릴 수 없습니"
 "다. 다음 명령으로 시작하십시오: sudo systemctl enable --now avahi-daemon"
+
+#: src/daemon/main.cpp
+msgid "Bluetooth is unavailable"
+msgstr "Bluetooth를 사용할 수 없음"
+
+#: src/daemon/main.cpp
+msgid ""
+"bluetoothd could not be reached, so messages, contacts and notifications "
+"from the iPhone are off until it is. Check: systemctl status bluetooth"
+msgstr ""
+"bluetoothd에 연결하지 못했으므로 연결될 때까지 iPhone의 메시지, 연락처, 알림"
+"이 꺼져 있습니다. 확인: systemctl status bluetooth"
 
 #: src/daemon/notification.cpp
 msgid "File arrived"
@@ -1717,6 +1952,12 @@ msgid "Open Folder"
 msgstr "폴더 열기"
 
 #: src/daemon/notification.cpp
+#, c++-format
+msgid "{} more notification"
+msgid_plural "{} more notifications"
+msgstr[0] "알림 {}개 더"
+
+#: src/daemon/notification.cpp
 msgid "Reply"
 msgstr "답장"
 
@@ -1728,6 +1969,12 @@ msgstr "코드 복사"
 #, c++-format
 msgid "Open in {}"
 msgstr "{}에서 열기"
+
+#. TRANSLATORS: {} is an iPhone app name. Silences its popups on this computer.
+#: src/daemon/notification.cpp
+#, c++-format
+msgid "Mute {}"
+msgstr "{} 음소거"
 
 #: src/gtk/calls_view.cpp
 msgid "Incoming"
@@ -1793,19 +2040,29 @@ msgstr "거절"
 msgid "Hang up"
 msgstr "끊기"
 
+#. TRANSLATORS: {} is a phone number.
+#: src/gtk/calls_view.cpp
+#, c++-format
+msgid "Calling {}…"
+msgstr "{}에 전화 거는 중…"
+
 #: src/gtk/calls_view.cpp
 msgid "No calls."
 msgstr "통화가 없습니다."
 
 #: src/gtk/calls_view.cpp
-msgid "Call control is off. Turn it on with 'tether --bt-calls-enable on'."
-msgstr "통화 제어가 꺼져 있습니다. 'tether --bt-calls-enable on'으로 켜십시오."
+msgid ""
+"Call control is off. Turn it on under Settings > Experimental > Call control "
+"over Bluetooth."
+msgstr ""
+"통화 제어가 꺼져 있습니다. 설정 > 실험적 기능 > Bluetooth 통화 제어에서 켜십"
+"시오."
 
 #: src/gtk/calls_view.cpp
 msgid "Number to call"
 msgstr "전화를 걸 번호"
 
-#: src/gtk/calls_view.cpp
+#: src/gtk/calls_view.cpp src/gtk/contacts_view.cpp
 msgid "Call"
 msgstr "전화 걸기"
 
@@ -1839,6 +2096,16 @@ msgid "Message {}"
 msgstr "{}에 메시지 보내기"
 
 #: src/gtk/contacts_view.cpp
+msgid "Call (turn on call control under Settings > Experimental)"
+msgstr "전화 걸기 (설정 > 실험적 기능에서 통화 제어를 켜십시오)"
+
+#. TRANSLATORS: Spoken name of the call button beside a phone number.
+#: src/gtk/contacts_view.cpp
+#, c++-format
+msgid "Call {}"
+msgstr "{}에 전화 걸기"
+
+#: src/gtk/contacts_view.cpp
 msgid "No contacts yet. Check the Bluetooth link on the Devices page."
 msgstr "아직 연락처가 없습니다. 기기 페이지에서 블루투스 연결을 확인하세요."
 
@@ -1855,8 +2122,52 @@ msgid "The Tether daemon is not running."
 msgstr "Tether 데몬이 실행 중이 아닙니다."
 
 #: src/gtk/daemon_client.cpp
+msgid "The Tether daemon went away. Reconnecting…"
+msgstr "Tether 데몬과의 연결이 끊어졌습니다. 다시 연결하는 중…"
+
+#: src/gtk/daemon_client.cpp
 msgid "Daemon Online"
 msgstr "데몬 온라인"
+
+#: src/gtk/devices_view.cpp
+msgid "Looking for the iPhone nearby…"
+msgstr "근처에서 iPhone을 찾는 중…"
+
+#: src/gtk/devices_view.cpp
+msgid "Looking for the iPhone again…"
+msgstr "iPhone을 다시 찾는 중…"
+
+#. TRANSLATORS: {} is a device name.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "Connecting to {}…"
+msgstr "{}에 연결하는 중…"
+
+#. TRANSLATORS: {} is a device name.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "Pairing with {}… Confirm on the iPhone when it asks."
+msgstr "{}와(과) 페어링하는 중… iPhone에서 확인을 요청하면 승인하십시오."
+
+#. TRANSLATORS: {} is a six-digit code.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "Check that both devices show the code {}."
+msgstr "두 기기 모두 코드 {}을(를) 표시하는지 확인하십시오."
+
+#: src/gtk/devices_view.cpp
+msgid "Waiting for the link to settle…"
+msgstr "링크가 안정되기를 기다리는 중…"
+
+#: src/gtk/devices_view.cpp
+msgid "The iPhone refused the connection. Trying once more…"
+msgstr "iPhone이 연결을 거부했습니다. 한 번 더 시도하는 중…"
+
+#. TRANSLATORS: {} is a device name.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "{} is already paired."
+msgstr "{}은(는) 이미 페어링되어 있습니다."
 
 #. TRANSLATORS: Left earbud, read aloud by screen readers before its battery level.
 #: src/gtk/devices_view.cpp
@@ -1970,6 +2281,11 @@ msgid "This machine cannot carry the Bluetooth features."
 msgstr "이 컴퓨터는 Bluetooth 기능을 지원할 수 없습니다."
 
 #: src/gtk/devices_view.cpp
+#, c++-format
+msgid "The running tetherd is {}, but this is tether {}. {}"
+msgstr "실행 중인 tetherd는 {}이지만 이것은 tether {}입니다. {}"
+
+#: src/gtk/devices_view.cpp
 msgid "Link"
 msgstr "링크"
 
@@ -1993,6 +2309,10 @@ msgstr "연결되어 사용할 준비가 되었습니다."
 msgid "Device is offline. Make sure it is switched on and on the same network."
 msgstr ""
 "기기가 오프라인입니다. 전원이 켜져 있고 같은 네트워크에 있는지 확인하십시오."
+
+#: src/gtk/devices_view.cpp
+msgid "This device asked to pair with this computer."
+msgstr "이 기기가 이 컴퓨터와 페어링을 요청했습니다."
 
 #: src/gtk/devices_view.cpp
 #, c++-format
@@ -2062,8 +2382,16 @@ msgid "({0} of {1})"
 msgstr "({1}개 중 {0}개)"
 
 #: src/gtk/devices_view.cpp
+msgid "Could not reach the Tether daemon; nothing was sent."
+msgstr "Tether 데몬에 연결하지 못했습니다. 아무것도 전송되지 않았습니다."
+
+#: src/gtk/devices_view.cpp
 msgid "Daemon unavailable."
 msgstr "데몬을 사용할 수 없습니다."
+
+#: src/gtk/devices_view.cpp
+msgid "The Tether daemon is not running, so nothing was sent."
+msgstr "Tether 데몬이 실행 중이 아니므로 아무것도 전송되지 않았습니다."
 
 #: src/gtk/devices_view.cpp
 msgid "Send File"
@@ -2144,6 +2472,12 @@ msgstr "페어링됨"
 msgid "Waiting for approval on {0}..."
 msgstr "{0}에서 승인을 기다리는 중입니다…"
 
+#. TRANSLATORS: {} is a device name.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "Rejected the pairing request from {}."
+msgstr "{}의 페어링 요청을 거부했습니다."
+
 #: src/gtk/devices_view.cpp
 msgid ""
 "Could not reach that device. If a firewall is running, Tether needs inbound "
@@ -2168,9 +2502,25 @@ msgstr "해당 기기에 연결할 수 없습니다."
 msgid "Pair request was rejected."
 msgstr "페어링 요청이 거부되었습니다."
 
+#. TRANSLATORS: {} is a device name.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "{} wants to pair. Accept or reject it above."
+msgstr "{}이(가) 페어링을 요청합니다. 위에서 수락하거나 거부하십시오."
+
 #: src/gtk/devices_view.cpp
 msgid "Ready"
 msgstr "준비됨"
+
+#. TRANSLATORS: {0} is a file name, {1} a percentage.
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "Sending {0}… {1}%"
+msgstr "{0} 보내는 중… {1}%"
+
+#: src/gtk/devices_view.cpp
+msgid "Send failed."
+msgstr "보내기에 실패했습니다."
 
 #: src/gtk/devices_view.cpp
 #, c++-format
@@ -2189,8 +2539,12 @@ msgid "Clipboard is empty."
 msgstr "클립보드가 비어 있습니다."
 
 #: src/gtk/devices_view.cpp
-msgid "Desktop Clipboard Sync triggered."
-msgstr "데스크탑 클립보드 동기화를 실행했습니다."
+msgid "Clipboard sent to the iPhone."
+msgstr "클립보드를 iPhone으로 보냈습니다."
+
+#: src/gtk/devices_view.cpp
+msgid "The clipboard is empty; nothing to send."
+msgstr "클립보드가 비어 있어 보낼 것이 없습니다."
 
 #: src/gtk/devices_view.cpp
 msgid "Messages and notifications are connected."
@@ -2214,6 +2568,10 @@ msgstr ""
 "iPhone에 이 코드가 표시됩니까?\n"
 "\n"
 "%s"
+
+#: src/gtk/devices_view.cpp
+msgid "The AirPods did not connect."
+msgstr "AirPods가 연결되지 않았습니다."
 
 #: src/gtk/devices_view.cpp
 msgid "Connect your iPhone"
@@ -2367,10 +2725,6 @@ msgid "Pair Device"
 msgstr "기기 페어링"
 
 #: src/gtk/devices_view.cpp
-msgid "Force Trust (Accept Pending)"
-msgstr "강제 신뢰 (대기 중 수락)"
-
-#: src/gtk/devices_view.cpp
 msgid "Drop files here to send"
 msgstr "보낼 파일을 여기에 놓으십시오"
 
@@ -2399,8 +2753,16 @@ msgid "Main menu"
 msgstr "기본 메뉴"
 
 #: src/gtk/main.cpp
+msgid "No system tray was found, so the window is shown instead."
+msgstr "시스템 트레이를 찾지 못해 대신 창을 표시합니다."
+
+#: src/gtk/main.cpp
 msgid "Look for devices"
 msgstr "기기 찾기"
+
+#: src/gtk/main.cpp
+msgid "Scanning for devices…"
+msgstr "기기를 검색하는 중…"
 
 #: src/gtk/main.cpp
 msgid "Devices"
@@ -2457,11 +2819,31 @@ msgstr[0] "읽지 않은 메시지 {}개"
 msgid "Sent: {}"
 msgstr "보냄: {}"
 
-#. TRANSLATORS: Read aloud before a message you received, {} is the message.
+#. TRANSLATORS: Read aloud before a message you received, {0} is the sender, {1}
+#. the message.
+#: src/gtk/messages_view.cpp
+#, c++-format
+msgid "Received from {0}: {1}"
+msgstr "{0}에게서 받음: {1}"
+
+#. TRANSLATORS: Read aloud before a message you received, {} is
+#. the message.
 #: src/gtk/messages_view.cpp
 #, c++-format
 msgid "Received: {}"
 msgstr "받음: {}"
+
+#: src/gtk/messages_view.cpp
+msgid "Sending…"
+msgstr "보내는 중…"
+
+#: src/gtk/messages_view.cpp
+msgid "Not sent."
+msgstr "보내지 않았습니다."
+
+#: src/gtk/messages_view.cpp
+msgid "Retry"
+msgstr "다시 시도"
 
 #: src/gtk/messages_view.cpp
 msgid "Bluetooth connection needed to sync messages."
@@ -2470,10 +2852,6 @@ msgstr "메시지를 동기화하려면 Bluetooth 연결이 필요합니다."
 #: src/gtk/messages_view.cpp
 msgid "Select a conversation"
 msgstr "대화 선택"
-
-#: src/gtk/messages_view.cpp
-msgid "Sending…"
-msgstr "보내는 중…"
 
 #: src/gtk/messages_view.cpp
 msgid "Enter a recipient."
@@ -2490,6 +2868,10 @@ msgstr "이 대화에는 답장할 수 없습니다."
 #: src/gtk/messages_view.cpp
 msgid "No answer about that message; it may still have been sent."
 msgstr "그 메시지에 대한 응답이 없습니다. 그래도 전송되었을 수 있습니다."
+
+#: src/gtk/messages_view.cpp
+msgid "No answer from the phone."
+msgstr "iPhone에서 응답이 없습니다."
 
 #: src/gtk/messages_view.cpp
 msgid "Could not reach the Tether daemon; the message was not sent."
@@ -2519,10 +2901,6 @@ msgstr "전화번호 또는 이메일"
 msgid "Send"
 msgstr "보내기"
 
-#: src/gtk/messages_view.cpp
-msgid "Retry"
-msgstr "다시 시도"
-
 #: src/gtk/notifications_view.cpp
 msgid "Dismiss on the iPhone"
 msgstr "iPhone에서 지우기"
@@ -2548,6 +2926,31 @@ msgstr "아직 알림이 없습니다."
 #: src/gtk/notifications_view.cpp
 msgid "Notification mirroring is unavailable."
 msgstr "알림 미러링을 사용할 수 없습니다."
+
+#: src/gtk/settings_view.cpp
+msgid "The Tether daemon is not running, so this setting was not changed."
+msgstr "Tether 데몬이 실행 중이 아니므로 이 설정은 변경되지 않았습니다."
+
+#: src/gtk/settings_view.cpp
+msgid "Delete the stored message history?"
+msgstr "저장된 메시지 기록을 삭제할까요?"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Messages and contacts already saved on this computer are deleted right away. "
+"The phone keeps its own copy, and conversations are re-read from it while "
+"connected."
+msgstr ""
+"이 컴퓨터에 이미 저장된 메시지와 연락처가 즉시 삭제됩니다. iPhone에는 자체 사"
+"본이 남아 있으며, 연결되어 있는 동안 대화를 iPhone에서 다시 읽어 옵니다."
+
+#: src/gtk/settings_view.cpp
+msgid "Delete history"
+msgstr "기록 삭제"
+
+#: src/gtk/settings_view.cpp
+msgid "Unmute"
+msgstr "음소거 해제"
 
 #: src/gtk/settings_view.cpp
 msgid ""
@@ -2585,6 +2988,24 @@ msgstr "트레이 아이콘"
 msgid ""
 "Symbolic follows the panel's color. Takes effect the next time Tether starts."
 msgstr "심볼릭은 패널 색상을 따릅니다. 다음에 Tether를 시작할 때 적용됩니다."
+
+#: src/gtk/settings_view.cpp
+msgid "Over Wi-Fi, what is copied here goes to the iPhone and back."
+msgstr ""
+"Wi-Fi를 통해 여기서 복사한 내용이 iPhone으로 가고, iPhone에서 복사한 내용이 "
+"이리로 옵니다."
+
+#: src/gtk/settings_view.cpp
+msgid "Sync the clipboard automatically"
+msgstr "클립보드 자동 동기화"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Off pauses it both ways; Send Clipboard on the Devices page still works. "
+"Copies a password manager marks as sensitive are never sent."
+msgstr ""
+"끄면 양방향 모두 일시 중지되지만, 기기 페이지의 '클립보드 보내기'는 계속 동작"
+"합니다. 암호 관리자가 민감하다고 표시한 복사 내용은 절대 전송되지 않습니다."
 
 #: src/gtk/settings_view.cpp
 msgid "iPhone notifications"
@@ -2628,11 +3049,27 @@ msgstr "끄면 iPhone 알림, 새 메시지, 도착한 파일이 모두 표시�
 
 #: src/gtk/settings_view.cpp
 msgid "Show message previews"
-msgstr "메시지 미리 보기 표시"
+msgstr "메시지 미리보기 표시"
 
 #: src/gtk/settings_view.cpp
 msgid "Off shows only the sender."
 msgstr "끄면 보낸 사람만 표시합니다."
+
+#: src/gtk/settings_view.cpp
+msgid "Muted apps"
+msgstr "음소거된 앱"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"iPhone apps whose alerts show no popup here. They still appear on the "
+"Notifications tab. Mute one from its popup."
+msgstr ""
+"알림이 와도 여기에 팝업을 표시하지 않는 iPhone 앱입니다. 알림 탭에는 계속 표"
+"시됩니다. 앱의 팝업에서 음소거할 수 있습니다."
+
+#: src/gtk/settings_view.cpp
+msgid "No apps are muted."
+msgstr "음소거된 앱이 없습니다."
 
 #: src/gtk/settings_view.cpp
 msgid "Security"
@@ -2705,6 +3142,26 @@ msgstr "Bluetooth 통화 제어"
 msgid "Answer and place calls from the Calls tab."
 msgstr "통화 탭에서 전화를 받고 걸 수 있습니다."
 
+#: src/gtk/tray.cpp
+msgid "Hide Tether"
+msgstr "Tether 숨기기"
+
+#: src/gtk/tray.cpp
+msgid "Show Tether"
+msgstr "Tether 표시"
+
+#: src/gtk/tray.cpp
+msgid "Sync clipboard with iPhone"
+msgstr "iPhone과 클립보드 동기화"
+
+#: src/gtk/tray.cpp
+msgid "Settings…"
+msgstr "설정…"
+
+#: src/gtk/tray.cpp
+msgid "Quit Tether"
+msgstr "Tether 종료"
+
 #: src/gtk/tray.cpp src/gtk/ui_util.cpp
 msgid "connected"
 msgstr "연결됨"
@@ -2724,6 +3181,16 @@ msgstr "{}: {}"
 msgid "Daemon: not running"
 msgstr "데몬: 실행 중이 아님"
 
+#: src/gtk/tray.cpp
+#, c++-format
+msgid "{} pairing request waiting"
+msgid_plural "{} pairing requests waiting"
+msgstr[0] "페어링 요청 {}개 대기 중"
+
+#: src/gtk/tray.cpp
+msgid "Clipboard sync paused"
+msgstr "클립보드 동기화 일시 중지됨"
+
 #: src/gtk/ui_util.cpp
 msgid "Waiting for the Tether daemon."
 msgstr "Tether 데몬을 기다리는 중입니다."
@@ -2739,6 +3206,38 @@ msgstr "기기를 페어링하고 네트워크를 통해 클립보드를 동기�
 #: src/gtk/tether-gtk.desktop.in
 msgid "iPhone;iOS;SMS;Messages;Clipboard;Files;Notifications;Calls;AirPods;"
 msgstr "iPhone;iOS;SMS;메시지;클립보드;파일;알림;통화;AirPods;"
+
+#~ msgid "Unknown action. Run tether --help for options\n"
+#~ msgstr "알 수 없는 동작입니다. 옵션을 보려면 tether --help를 실행하십시오\n"
+
+#~ msgid ""
+#~ "The daemon is not running, and could not be started. Check the log in "
+#~ "$XDG_STATE_HOME/tether, or start it with 'systemctl --user start "
+#~ "tetherd.service'.\n"
+#~ msgstr ""
+#~ "데몬이 실행 중이 아니며 시작할 수도 없었습니다. $XDG_STATE_HOME/tether의 "
+#~ "로그를 확인하거나 'systemctl --user start tetherd.service'로 시작하십시"
+#~ "오.\n"
+
+#~ msgid ""
+#~ "Explicit framework connection locally rejected! Did you target explicitly "
+#~ "invalid TLS or is daemon broken?\n"
+#~ msgstr ""
+#~ "명시적 프레임워크 연결이 로컬에서 거부되었습니다! 명백히 잘못된 TLS를 지정"
+#~ "했거나 데몬이 손상되었습니까?\n"
+
+#~ msgid "--forget expects a fingerprint.\n"
+#~ msgstr "--forget에는 지문을 지정해야 합니다.\n"
+
+#~ msgid "Call control is off. Turn it on with 'tether --bt-calls-enable on'."
+#~ msgstr ""
+#~ "통화 제어가 꺼져 있습니다. 'tether --bt-calls-enable on'으로 켜십시오."
+
+#~ msgid "Desktop Clipboard Sync triggered."
+#~ msgstr "데스크탑 클립보드 동기화를 실행했습니다."
+
+#~ msgid "Force Trust (Accept Pending)"
+#~ msgstr "강제 신뢰 (대기 중 수락)"
 
 #~ msgid ""
 #~ "Where messages and contacts are stored on this computer. Encrypted keeps "
@@ -2803,7 +3302,3 @@ msgstr "iPhone;iOS;SMS;메시지;클립보드;파일;알림;통화;AirPods;"
 #, fuzzy
 #~ msgid "Tether version"
 #~ msgstr "tether 버전을 표시합니다."
-
-#, fuzzy
-#~ msgid "on"
-#~ msgstr "본드"

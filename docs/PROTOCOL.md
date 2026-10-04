@@ -200,7 +200,7 @@ TLS still verifies the peer's `CertificateVerify` signature, so a pinned fingerp
 Every node is a peer. A PC, iPhone or iPad all listen and all dial, and one certificate serves both roles, so a node's fingerprint is the same whether it opened the connection or accepted it. Pairing is therefore direction-agnostic but never symmetric in authority:
 
 - The **dialling** node sends `pair_request` as soon as its handshake completes. Dialling is its own consent, so it prompts nobody locally.
-- The **receiving** node prompts its user (the desktop dialog, or `tether --accept <fingerprint>`).
+- The **receiving** node prompts its user (the desktop dialog, or `tether accept <fingerprint>`; `tether reject <fingerprint>` declines).
 - Only the receiver's approval settles it. It replies `pair_accepted`, and **both** sides then write the other's fingerprint to their own `known_hosts.json`.
 
 A node must never pin a peer on local assertion alone — a UI must not report a device paired or connected until `pair_accepted` has crossed the wire and the trust record exists.
@@ -254,7 +254,7 @@ mDNS is multicast, so it resolves nothing across a VPN such as Tailscale, or on 
 }
 ```
 
-Once paired (via `tether --accept <fingerprint>`, the desktop dialog, or the peer's `pair_accepted`), the fingerprint is written to `known_hosts.json`. Later connections presenting that certificate are treated as paired and may issue any command.
+Once paired (via `tether accept <fingerprint>`, the desktop dialog, or the peer's `pair_accepted`), the fingerprint is written to `known_hosts.json`. Later connections presenting that certificate are treated as paired and may issue any command.
 
 ---
 

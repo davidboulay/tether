@@ -7,9 +7,12 @@
 #include <cstring>
 #include <ctime>
 #include <fstream>
+#include <functional>
 #include <iostream>
+#include <map>
 #include <nlohmann/json.hpp>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <strings.h>
 #include <sys/ioctl.h>
@@ -21,6 +24,7 @@
 #include <tether/extension_host.hpp>
 #include <tether/i18n.hpp>
 #include <tether/log.hpp>
+#include <tether/net.hpp>
 #include <tether/packaging.hpp>
 #include <tether/service.hpp>
 #include <tether/version.hpp>
@@ -173,6 +177,92 @@ static void print_fields(const std::vector<Field>& rows) {
     }
 }
 
+// --json: the daemon's reply as it came, for scripts.
+static bool g_json = false;
+
+static int print_json(const nlohmann::json& reply) {
+    fprintf(stdout, "%s\n", reply.dump(2).c_str());
+    return 0;
+}
+
+// The daemon answers one request at a time here, but be strict about it: parse
+// the first line only, so a stray broadcast cannot turn into a parse error.
+static nlohmann::json parse_first_line(const std::string& response) {
+    const auto newline = response.find('\n');
+    return nlohmann::json::parse(newline == std::string::npos ? response : response.substr(0, newline));
+}
+
+// One request, one newline-framed reply. Unix sockets are streams, so a reply
+// can span several reads; a daemon that stalls mid-reply fails fast rather than
+// hanging the CLI. Throws with a sentence fit to print.
+static nlohmann::json request_reply(tether::Client& client, const nlohmann::json& request) {
+    if (!client.send(request.dump() + "\n"))
+        throw std::runtime_error(_("Could not reach the daemon."));
+    constexpr size_t max_reply_bytes = 8 * 1024 * 1024;
+    constexpr int read_timeout_ms = 5000;
+    std::string response;
+    char buffer[8192];
+    while (response.find('\n') == std::string::npos) {
+        if (!client.wait_readable(read_timeout_ms))
+            throw std::runtime_error(_("The daemon did not answer in time."));
+        const ssize_t n = client.read(buffer, sizeof(buffer));
+        if (n <= 0 || response.size() + static_cast<size_t>(n) > max_reply_bytes)
+            throw std::runtime_error(_("The daemon closed the connection before answering."));
+        response.append(buffer, static_cast<size_t>(n));
+    }
+    // A daemon that predates a command acknowledges it with a bare OK and
+    // changes nothing, which must not read as success.
+    if (response.rfind("OK", 0) == 0 && (response.size() == 2 || response[2] == '\n' || response[2] == '\r'))
+        throw std::runtime_error(_("The daemon does not know this command; it may be an older tetherd."));
+    try {
+        return parse_first_line(response);
+    } catch (const std::exception&) {
+        throw std::runtime_error(_("The daemon sent an unreadable reply."));
+    }
+}
+
+static nlohmann::json request_reply(tether::Client& client, const char* command) {
+    return request_reply(client, nlohmann::json{{"command", command}});
+}
+
+// A setting is applied when the daemon says so: it answers every setter with the
+// bt_status it saved, and 'ok' reads the field back out of that. An older
+// daemon answers nothing, which is reported rather than taken for success.
+static int apply_setting(tether::Client& client,
+                         const nlohmann::json& request,
+                         const std::function<bool(const nlohmann::json&)>& ok,
+                         const std::string& done) {
+    nlohmann::json status;
+    try {
+        status = request_reply(client, request);
+    } catch (const std::exception& e) {
+        debug::log(ERR, "{}", e.what());
+        debug::log(ERR, _("The daemon did not confirm the change; it may be an older tetherd.\n"));
+        return 1;
+    }
+    if (status.value("command", "") != "bt_status" || !ok(status)) {
+        debug::log(ERR, _("The daemon did not apply the change.\n"));
+        return 1;
+    }
+    if (g_json)
+        return print_json(status);
+    fprintf(stdout, "%s\n", done.c_str());
+    return 0;
+}
+
+// on|off setters all check one boolean field of the reply.
+static int apply_toggle(tether::Client& client,
+                        const char* command,
+                        const char* field,
+                        bool enabled,
+                        const std::string& done) {
+    return apply_setting(
+        client,
+        nlohmann::json{{"command", command}, {"enabled", enabled}},
+        [field, enabled](const nlohmann::json& status) { return status.value(field, !enabled) == enabled; },
+        done);
+}
+
 struct Opt {
     const char* flags;
     const char* desc;
@@ -243,9 +333,39 @@ static const Opt kOptions[] = {
     {"--status", N_("Show what the daemon is doing: devices, links, and recent transfers.")},
     {"--pending", N_("List Wi-Fi pairing requests waiting to be accepted.")},
     {"--accept <fingerprint>", N_("Accept a pending pairing request locally.")},
+    {"--reject <fingerprint>", N_("Turn down a pending pairing request, and tell the other device so.")},
     {"--forget <fingerprint>", N_("Remove a Wi-Fi pairing and drop its session.")},
     {"--pair", N_("Send a pair_request over TCP to the daemon.")},
+    {"--clipboard-sync <on|off|status>",
+     N_("Pause or resume sending this computer's clipboard to the iPhone, or show which it is.")},
+    {"--mute <bundle-id|list>",
+     N_("Stop showing desktop popups from one iPhone app, named by its bundle id, or list the muted apps.")},
+    {"--unmute <bundle-id>", N_("Show desktop popups from a muted iPhone app again.")},
+    {"--json", N_("Print the daemon's reply as JSON instead of text, on the commands that read state.")},
 };
+
+// What a flag's argument can be, for shell completion. Flags not listed take
+// free text (an address, a path) or nothing.
+static const std::map<std::string, std::vector<std::string>> kFlagValues = {
+    {"--bt-airpods-enable", {"on", "off"}},
+    {"--bt-airpods-mode", {"off", "anc", "transparency", "adaptive"}},
+    {"--bt-airpods-pause", {"never", "one-removed", "both-removed"}},
+    {"--bt-airpods-handoff", {"on", "off"}},
+    {"--bt-lock-on-away", {"on", "off"}},
+    {"--bt-enable", {"on", "off"}},
+    {"--bt-ancs", {"on", "off"}},
+    {"--bt-ancs-content", {"on", "off"}},
+    {"--bt-retention", {"encrypted", "plaintext", "none"}},
+    {"--bt-adapter", {"auto"}},
+    {"--bt-calls-enable", {"on", "off"}},
+    {"--bt-call-audio", {"on", "off"}},
+    {"--clipboard-sync", {"on", "off", "status"}},
+    {"--mute", {"list"}},
+};
+
+// Flags whose argument is a file.
+static const std::vector<std::string> kFileFlags = {"-f", "--send-file"};
+
 
 // The option row a subcommand stands for, matched on the long flag so the two
 // lists cannot drift apart.
@@ -318,8 +438,11 @@ void print_help() {
             "  tether discover --timeout 5000\n"
             "  tether send ./report.pdf\n"
             "  tether accept 9a4f21...\n"
-            "  tether bt pair AA:BB:CC:DD:EE:FF\n",
+            "  tether bt pair AA:BB:CC:DD:EE:FF\n"
+            "  tether --json bt connection\n"
+            "  tether clipboard off\n",
             _("Examples:"));
+    fprintf(stdout, "\n%s\n", _("Shell completion: tether --print-completions <bash|zsh|fish>"));
 }
 
 static int print_extension_host_install() {
@@ -375,11 +498,13 @@ static int install_btclass_unit() {
 static int print_bt_setup(tether::Client& client) {
     nlohmann::json resp;
     try {
-        resp = nlohmann::json::parse(client.send_and_wait("{\"command\":\"bt_status\"}\n"));
+        resp = request_reply(client, "bt_status");
     } catch (const std::exception&) {
         debug::log(ERR, _("Could not read Bluetooth status from the daemon.\n"));
         return 1;
     }
+    if (g_json)
+        return print_json(resp);
 
     if (!resp.value("available", false)) {
         fprintf(stdout, _("Bluetooth: unavailable (is bluetoothd running?)\n"));
@@ -407,7 +532,7 @@ static int print_bt_setup(tether::Client& client) {
             fprintf(stdout, "%s\n", line.c_str());
     }
 
-    fprintf(stdout, _("\nRe-run 'tether --bt-setup' afterwards to confirm.\n"));
+    fprintf(stdout, _("\nRe-run 'tether bt setup' afterwards to confirm.\n"));
     return 0;
 }
 
@@ -431,11 +556,13 @@ static bool adapter_known(const nlohmann::json& status, const std::string& id) {
 static int print_bt_status(tether::Client& client) {
     nlohmann::json resp;
     try {
-        resp = nlohmann::json::parse(client.send_and_wait("{\"command\":\"bt_status\"}\n"));
+        resp = request_reply(client, "bt_status");
     } catch (const std::exception&) {
         debug::log(ERR, _("Could not read Bluetooth status from the daemon.\n"));
         return 1;
     }
+    if (g_json)
+        return print_json(resp);
 
     if (!resp.value("available", false)) {
         fprintf(stdout, _("Bluetooth: unavailable (is bluetoothd running?)\n"));
@@ -467,13 +594,14 @@ static int print_bt_status(tether::Client& client) {
     // solicitation off air, so the iPhone never offers notification access.
     fields.emplace_back(_("Notifications"),
                         resp.value("ancs_enabled", true) ? _("mirroring on")
-                                                         : _("mirroring off (tether --bt-ancs on)"));
-    fields.emplace_back(_("Tether"), resp.value("enabled", true) ? _("connecting") : _("off (--bt-enable on)"));
+                                                         : _("mirroring off (tether bt ancs on)"));
+    fields.emplace_back(_("Tether"),
+                        resp.value("enabled", true) ? _("connecting") : _("off (tether bt enable on)"));
 
     if (resp.value("retention", "encrypted") == "encrypted" && !resp.value("retention_ready", true))
         fields.emplace_back(_("History"),
                             _("paused - the desktop keyring has no key to offer yet.\n"
-                              "Unlock it, or run 'tether --bt-retention plaintext'."));
+                              "Unlock it, or run 'tether bt retention plaintext'."));
     print_fields(fields);
 
     for (const auto& adapter : resp["adapters"]) {
@@ -503,8 +631,8 @@ static int print_bt_status(tether::Client& client) {
     const size_t pending = cap.contains("setup") ? cap["setup"].size() : 0;
     if (pending > 0)
         fprintf(stdout,
-                P_("\n%zu setup step remaining. Run: tether --bt-setup\n",
-                   "\n%zu setup steps remaining. Run: tether --bt-setup\n",
+                P_("\n%zu setup step remaining. Run: tether bt setup\n",
+                   "\n%zu setup steps remaining. Run: tether bt setup\n",
                    pending),
                 pending);
     return 0;
@@ -513,11 +641,13 @@ static int print_bt_status(tether::Client& client) {
 static int print_bt_devices(tether::Client& client) {
     nlohmann::json resp;
     try {
-        resp = nlohmann::json::parse(client.send_and_wait("{\"command\":\"bt_list_devices\"}\n"));
+        resp = request_reply(client, "bt_list_devices");
     } catch (const std::exception&) {
         debug::log(ERR, _("Could not read Bluetooth devices from the daemon.\n"));
         return 1;
     }
+    if (g_json)
+        return print_json(resp);
 
     const auto& devices = resp["devices"];
     if (devices.empty()) {
@@ -563,12 +693,14 @@ static int print_bt_airpods(tether::Client& client) {
     nlohmann::json resp;
     nlohmann::json status;
     try {
-        resp = nlohmann::json::parse(client.send_and_wait("{\"command\":\"bt_airpods\"}\n"));
-        status = nlohmann::json::parse(client.send_and_wait("{\"command\":\"bt_status\"}\n"));
+        resp = request_reply(client, "bt_airpods");
+        status = request_reply(client, "bt_status");
     } catch (const std::exception&) {
         debug::log(ERR, _("Could not read the AirPods battery from the daemon.\n"));
         return 1;
     }
+    if (g_json)
+        return print_json(resp);
 
     if (resp.value("address", "").empty()) {
         fprintf(stdout,
@@ -619,9 +751,9 @@ static int set_bt_airpods_mode(tether::Client& client, const std::string& mode) 
     request["mode"] = mode;
     nlohmann::json resp;
     try {
-        resp = nlohmann::json::parse(client.send_and_wait(request.dump() + "\n"));
-    } catch (const std::exception&) {
-        debug::log(ERR, _("Could not reach the daemon.\n"));
+        resp = request_reply(client, request);
+    } catch (const std::exception& e) {
+        debug::log(ERR, "{}\n", e.what());
         return 1;
     }
     if (resp.value("success", false)) {
@@ -637,12 +769,11 @@ static int set_bt_airpods_pause(tether::Client& client, const std::string& mode)
         debug::log(ERR, _("Use never, one-removed or both-removed.\n"));
         return 1;
     }
-    if (!client.send(nlohmann::json{{"command", "bt_airpods_pause"}, {"mode", mode}}.dump() + "\n")) {
-        debug::log(ERR, _("Could not reach the daemon.\n"));
-        return 1;
-    }
-    fprintf(stdout, _("Pause on removal set to %s.\n"), mode.c_str());
-    return 0;
+    return apply_setting(
+        client,
+        nlohmann::json{{"command", "bt_airpods_pause"}, {"mode", mode}},
+        [&mode](const nlohmann::json& status) { return status.value("airpods_pause", "") == mode; },
+        tether::tr_format(_("Pause on removal set to {}."), mode));
 }
 
 static int set_bt_airpods_enable(tether::Client& client, const std::string& value) {
@@ -650,15 +781,12 @@ static int set_bt_airpods_enable(tether::Client& client, const std::string& valu
         debug::log(ERR, _("Use on or off.\n"));
         return 1;
     }
-    if (!client.send(nlohmann::json{{"command", "bt_airpods_enable"}, {"enabled", value == "on"}}.dump() + "\n")) {
-        debug::log(ERR, _("Could not reach the daemon.\n"));
-        return 1;
-    }
-    fprintf(stdout,
-            "%s\n",
-            value == "on" ? _("Tether is managing the AirPods.")
-                          : _("Tether has released the AirPods channel for another program."));
-    return 0;
+    return apply_toggle(client,
+                        "bt_airpods_enable",
+                        "airpods_enabled",
+                        value == "on",
+                        value == "on" ? _("Tether is managing the AirPods.")
+                                      : _("Tether has released the AirPods channel for another program."));
 }
 
 static int set_bt_airpods_handoff(tether::Client& client, const std::string& value) {
@@ -666,15 +794,12 @@ static int set_bt_airpods_handoff(tether::Client& client, const std::string& val
         debug::log(ERR, _("Use on or off.\n"));
         return 1;
     }
-    if (!client.send(nlohmann::json{{"command", "bt_airpods_handoff"}, {"enabled", value == "on"}}.dump() + "\n")) {
-        debug::log(ERR, _("Could not reach the daemon.\n"));
-        return 1;
-    }
-    fprintf(stdout,
-            "%s\n",
-            value == "on" ? _("An iPhone call will hand the AirPods to the phone and take them back after.")
-                          : _("AirPods handoff is off."));
-    return 0;
+    return apply_toggle(client,
+                        "bt_airpods_handoff",
+                        "airpods_handoff",
+                        value == "on",
+                        value == "on" ? _("An iPhone call will hand the AirPods to the phone and take them back after.")
+                                      : _("AirPods handoff is off."));
 }
 
 static int set_bt_lock_on_away(tether::Client& client, const std::string& value) {
@@ -682,15 +807,12 @@ static int set_bt_lock_on_away(tether::Client& client, const std::string& value)
         debug::log(ERR, _("Use on or off.\n"));
         return 1;
     }
-    if (!client.send(nlohmann::json{{"command", "bt_set_lock_on_away"}, {"enabled", value == "on"}}.dump() + "\n")) {
-        debug::log(ERR, _("Could not reach the daemon.\n"));
-        return 1;
-    }
-    fprintf(stdout,
-            "%s\n",
-            value == "on" ? _("The session will lock when the iPhone goes out of range.")
-                          : _("Locking on the iPhone going out of range is off."));
-    return 0;
+    return apply_toggle(client,
+                        "bt_set_lock_on_away",
+                        "lock_on_away",
+                        value == "on",
+                        value == "on" ? _("The session will lock when the iPhone goes out of range.")
+                                      : _("Locking on the iPhone going out of range is off."));
 }
 
 // Pairing takes tens of seconds and reports progress as it goes, so this
@@ -776,11 +898,13 @@ static int run_bt_transaction(tether::Client& client,
 static int print_bt_connection(tether::Client& client) {
     nlohmann::json resp;
     try {
-        resp = nlohmann::json::parse(client.send_and_wait("{\"command\":\"bt_connection\"}\n"));
+        resp = request_reply(client, "bt_connection");
     } catch (const std::exception&) {
         debug::log(ERR, _("Could not read Bluetooth connection state from the daemon.\n"));
         return 1;
     }
+    if (g_json)
+        return print_json(resp);
 
     std::vector<Field> fields;
     fields.emplace_back(_("Device present"), yn(resp.value("device_present", false)));
@@ -837,11 +961,13 @@ static int print_bt_connection(tether::Client& client) {
 static int print_bt_diagnostics(tether::Client& client) {
     nlohmann::json resp;
     try {
-        resp = nlohmann::json::parse(client.send_and_wait("{\"command\":\"bt_diagnostics\"}\n"));
+        resp = request_reply(client, "bt_diagnostics");
     } catch (const std::exception&) {
         debug::log(ERR, _("Could not read Bluetooth diagnostics from the daemon.\n"));
         return 1;
     }
+    if (g_json)
+        return print_json(resp);
 
     fprintf(stdout, "%s\n", resp.dump(2).c_str());
     return 0;
@@ -878,15 +1004,17 @@ static int run_call_command(tether::Client& client, const nlohmann::json& reques
 static int print_bt_calls(tether::Client& client) {
     nlohmann::json resp;
     try {
-        resp = nlohmann::json::parse(client.send_and_wait("{\"command\":\"bt_list_calls\"}\n"));
+        resp = request_reply(client, "bt_list_calls");
     } catch (const std::exception&) {
         debug::log(ERR, _("Could not read calls from the daemon.\n"));
         return 1;
     }
+    if (g_json)
+        return print_json(resp);
 
     const auto& calls = resp["calls"];
     if (calls.empty()) {
-        fprintf(stdout, _("No calls. Check 'tether --bt-connection'.\n"));
+        fprintf(stdout, _("No calls. Check 'tether bt connection'.\n"));
         return 0;
     }
 
@@ -906,15 +1034,17 @@ static int print_bt_calls(tether::Client& client) {
 static int print_bt_notifications(tether::Client& client) {
     nlohmann::json resp;
     try {
-        resp = nlohmann::json::parse(client.send_and_wait("{\"command\":\"bt_list_notifications\"}\n"));
+        resp = request_reply(client, "bt_list_notifications");
     } catch (const std::exception&) {
         debug::log(ERR, _("Could not read notifications from the daemon.\n"));
         return 1;
     }
+    if (g_json)
+        return print_json(resp);
 
     const auto& notifications = resp["notifications"];
     if (notifications.empty()) {
-        fprintf(stdout, _("No notifications yet. Check 'tether --bt-connection'.\n"));
+        fprintf(stdout, _("No notifications yet. Check 'tether bt connection'.\n"));
         return 0;
     }
 
@@ -940,15 +1070,17 @@ static int print_bt_notifications(tether::Client& client) {
 static int print_bt_threads(tether::Client& client) {
     nlohmann::json resp;
     try {
-        resp = nlohmann::json::parse(client.send_and_wait("{\"command\":\"bt_list_threads\"}\n"));
+        resp = request_reply(client, "bt_list_threads");
     } catch (const std::exception&) {
         debug::log(ERR, _("Could not read conversations from the daemon.\n"));
         return 1;
     }
+    if (g_json)
+        return print_json(resp);
 
     const auto& threads = resp["threads"];
     if (threads.empty()) {
-        fprintf(stdout, _("No conversations yet. Check 'tether --bt-connection'.\n"));
+        fprintf(stdout, _("No conversations yet. Check 'tether bt connection'.\n"));
         return 0;
     }
 
@@ -978,8 +1110,7 @@ static int print_bt_threads(tether::Client& client) {
 static void warn_if_daemon_is_older(tether::Client& client) {
     std::string running;
     try {
-        auto status = nlohmann::json::parse(client.send_and_wait("{\"command\":\"bt_status\"}\n"));
-        running = status.value("version", "");
+        running = request_reply(client, "bt_status").value("version", "");
     } catch (const std::exception&) {
         return;
     }
@@ -988,11 +1119,10 @@ static void warn_if_daemon_is_older(tether::Client& client) {
 
     // No version field at all means a daemon older than the field itself.
     debug::log(ERR,
-               _("The running tetherd is {}, but this is tether {}. Stop it and it\n"
-                 "restarts on demand:\n"
-                 "    pkill tetherd\n"),
+               _("The running tetherd is {}, but this is tether {}. {}\n"),
                running.empty() ? _("an older build") : running.c_str(),
-               TETHER_VERSION);
+               TETHER_VERSION,
+               tether::daemon_restart_hint());
 }
 
 static int print_bt_contacts(tether::Client& client, const std::string& query) {
@@ -1002,16 +1132,18 @@ static int print_bt_contacts(tether::Client& client, const std::string& query) {
 
     nlohmann::json resp;
     try {
-        resp = nlohmann::json::parse(client.send_and_wait(request.dump() + "\n"));
+        resp = request_reply(client, request);
     } catch (const std::exception&) {
         debug::log(ERR, _("Could not read contacts from the daemon.\n"));
         return 1;
     }
+    if (g_json)
+        return print_json(resp);
 
     const auto& contacts = resp["contacts"];
     if (contacts.empty()) {
         if (query.empty())
-            fprintf(stdout, _("No contacts yet. Check 'tether --bt-connection'.\n"));
+            fprintf(stdout, _("No contacts yet. Check 'tether bt connection'.\n"));
         else
             fprintf(stdout, _("No contacts match %s\n"), query.c_str());
         return 0;
@@ -1036,11 +1168,13 @@ static int print_bt_messages(tether::Client& client, const std::string& thread) 
 
     nlohmann::json resp;
     try {
-        resp = nlohmann::json::parse(client.send_and_wait(request.dump() + "\n"));
+        resp = request_reply(client, request);
     } catch (const std::exception&) {
         debug::log(ERR, _("Could not read messages from the daemon.\n"));
         return 1;
     }
+    if (g_json)
+        return print_json(resp);
 
     const auto& messages = resp["messages"];
     if (messages.empty()) {
@@ -1110,13 +1244,6 @@ static int send_bt_message(tether::Client& client, const std::string& thread, co
     }
 }
 
-// The daemon answers one request at a time here, but be strict about it: parse
-// the first line only, so a stray broadcast cannot turn into a parse error.
-static nlohmann::json parse_first_line(const std::string& response) {
-    const auto newline = response.find('\n');
-    return nlohmann::json::parse(newline == std::string::npos ? response : response.substr(0, newline));
-}
-
 static nlohmann::json state_snapshot(tether::Client& client) {
     if (!client.send("{\"command\":\"state_snapshot\"}\n"))
         throw std::runtime_error("Could not request state_snapshot");
@@ -1150,6 +1277,8 @@ static int print_status(tether::Client& client) {
         debug::log(ERR, _("Could not read the daemon's state.\n"));
         return 1;
     }
+    if (g_json)
+        return print_json(snap);
 
     // Defaults rather than lookups: a daemon that predates a field should
     // still give a readable status.
@@ -1187,7 +1316,7 @@ static int print_status(tether::Client& client) {
 
     // The count is already a field above, so this only says what to do about it.
     if (!pending.empty())
-        fprintf(stdout, _("\nRun 'tether --pending' to see what is waiting to be accepted.\n"));
+        fprintf(stdout, _("\nRun 'tether pending' to see what is waiting to be accepted.\n"));
 
     return 0;
 }
@@ -1204,6 +1333,8 @@ static int print_pending(tether::Client& client) {
     }
 
     const auto pending = snap.value("pending_pairs", nlohmann::json::array());
+    if (g_json)
+        return print_json(pending);
     if (pending.empty()) {
         fprintf(stdout, _("No pairing requests are waiting.\n"));
         return 0;
@@ -1212,7 +1343,7 @@ static int print_pending(tether::Client& client) {
     for (const auto& item : pending)
         fprintf(stdout, "  %-20s  %s\n", item.value("device_name", "?").c_str(), item.value("fingerprint", "").c_str());
 
-    fprintf(stdout, _("\nAccept one with: tether --accept <fingerprint>\n"));
+    fprintf(stdout, _("\nAccept one with: tether accept <fingerprint>\nTurn one down with: tether reject <fingerprint>\n"));
     return 0;
 }
 
@@ -1269,6 +1400,295 @@ static int uninstall_service() {
     return 0;
 }
 
+// --- shell completions, generated from the tables above so they cannot drift.
+
+namespace {
+
+    struct FlagSpec {
+        std::string flag;
+        std::string desc;
+        std::vector<std::string> values;
+        bool takes_file = false;
+        bool takes_arg = false;
+    };
+
+    // Every flag in kOptions, one entry per spelling ("-g" and "--get-clipboard"
+    // are two), with what it takes after it.
+    std::vector<FlagSpec> flag_specs() {
+        std::vector<FlagSpec> specs;
+        for (const auto& opt : kOptions) {
+            const std::string flags = opt.flags;
+            const bool takes_arg = flags.find('<') != std::string::npos || flags.find('[') != std::string::npos;
+            size_t start = 0;
+            while (start < flags.size()) {
+                size_t end = flags.find(", ", start);
+                std::string part = flags.substr(start, end == std::string::npos ? std::string::npos : end - start);
+                const std::string flag = part.substr(0, part.find(' '));
+                if (!flag.empty() && flag[0] == '-') {
+                    FlagSpec spec{flag, _(opt.desc), {}, false, takes_arg};
+                    if (auto it = kFlagValues.find(flag); it != kFlagValues.end())
+                        spec.values = it->second;
+                    spec.takes_file = std::find(kFileFlags.begin(), kFileFlags.end(), flag) != kFileFlags.end();
+                    specs.push_back(spec);
+                }
+                if (end == std::string::npos)
+                    break;
+                start = end + 2;
+            }
+        }
+        return specs;
+    }
+
+    std::string sq(const std::string& text) {
+        std::string out = "'";
+        for (char c : text)
+            out += c == '\'' ? std::string("'\\''") : std::string(1, c);
+        return out + "'";
+    }
+
+    // 'tether bt <name>' names: every --bt-* flag without its prefix.
+    std::vector<std::string> bt_names(const std::vector<FlagSpec>& specs) {
+        std::vector<std::string> names;
+        for (const auto& spec : specs)
+            if (spec.flag.rfind("--bt-", 0) == 0)
+                names.push_back(spec.flag.substr(5));
+        return names;
+    }
+
+    const FlagSpec* find_spec(const std::vector<FlagSpec>& specs, const std::string& flag) {
+        for (const auto& spec : specs)
+            if (spec.flag == flag)
+                return &spec;
+        return nullptr;
+    }
+
+    std::string join(const std::vector<std::string>& words, const char* sep = " ") {
+        std::string out;
+        for (const auto& w : words)
+            out += (out.empty() ? "" : sep) + w;
+        return out;
+    }
+
+    void print_bash_completions() {
+        const auto specs = flag_specs();
+        std::vector<std::string> verbs, flags;
+        for (size_t i = 0; i < tether::cli::kVerbCount; ++i)
+            verbs.push_back(tether::cli::kVerbs[i].verb);
+        verbs.push_back("bt");
+        for (const auto& spec : specs)
+            flags.push_back(spec.flag);
+
+        fprintf(stdout, "# bash completion for tether, generated by 'tether --print-completions bash'\n");
+        fprintf(stdout, "_tether() {\n");
+        fprintf(stdout, "    local cur prev words cword\n");
+        fprintf(stdout,
+                "    if type _init_completion >/dev/null 2>&1; then _init_completion || return; else\n"
+                "        cur=\"${COMP_WORDS[COMP_CWORD]}\" prev=\"${COMP_WORDS[COMP_CWORD-1]}\" "
+                "cword=$COMP_CWORD words=(\"${COMP_WORDS[@]}\"); fi\n");
+        fprintf(stdout, "    local verbs=%s\n", sq(join(verbs)).c_str());
+        fprintf(stdout, "    local bt_names=%s\n", sq(join(bt_names(specs))).c_str());
+        fprintf(stdout, "    local flags=%s\n", sq(join(flags)).c_str());
+        // What a flag takes, when the word before the cursor is one. The verb
+        // and 'bt <name>' spellings are handled below by position, since a name
+        // like 'send' means two different things in 'tether send' and 'tether bt send'.
+        const auto emit_value_case = [](const std::string& pattern, const FlagSpec& spec) {
+            if (spec.takes_file)
+                fprintf(stdout,
+                        "        %s) _filedir 2>/dev/null || COMPREPLY=($(compgen -f -- \"$cur\")); return ;;\n",
+                        pattern.c_str());
+            else if (!spec.values.empty())
+                fprintf(stdout,
+                        "        %s) COMPREPLY=($(compgen -W %s -- \"$cur\")); return ;;\n",
+                        pattern.c_str(),
+                        sq(join(spec.values)).c_str());
+            else if (spec.takes_arg)
+                fprintf(stdout, "        %s) return ;;\n", pattern.c_str());
+        };
+        fprintf(stdout, "    case \"$prev\" in\n");
+        for (const auto& spec : specs)
+            emit_value_case(spec.flag, spec);
+        fprintf(stdout, "    esac\n");
+        fprintf(stdout, "    if [[ $cword -eq 1 ]]; then\n");
+        fprintf(stdout, "        COMPREPLY=($(compgen -W \"$verbs $flags\" -- \"$cur\")); return\n");
+        fprintf(stdout, "    fi\n");
+        fprintf(stdout, "    if [[ ${words[1]} == bt ]]; then\n");
+        fprintf(stdout, "        if [[ $cword -eq 2 ]]; then\n");
+        fprintf(stdout, "            COMPREPLY=($(compgen -W \"$bt_names\" -- \"$cur\")); return\n");
+        fprintf(stdout, "        fi\n");
+        fprintf(stdout, "        if [[ $cword -eq 3 ]]; then\n");
+        fprintf(stdout, "            case \"${words[2]}\" in\n");
+        for (const auto& spec : specs) {
+            if (spec.flag.rfind("--bt-", 0) == 0) {
+                FlagSpec indented = spec;
+                fprintf(stdout, "    ");
+                emit_value_case(spec.flag.substr(5), indented);
+            }
+        }
+        fprintf(stdout, "            esac\n");
+        fprintf(stdout, "        fi\n");
+        fprintf(stdout, "    elif [[ $cword -eq 2 ]]; then\n");
+        fprintf(stdout, "        case \"${words[1]}\" in\n");
+        fprintf(stdout, "            send) _filedir 2>/dev/null || COMPREPLY=($(compgen -f -- \"$cur\")); return ;;\n");
+        fprintf(stdout, "            clipboard) COMPREPLY=($(compgen -W 'on off status' -- \"$cur\")); return ;;\n");
+        fprintf(stdout, "            mute) COMPREPLY=($(compgen -W 'list' -- \"$cur\")); return ;;\n");
+        fprintf(stdout, "            accept|reject|forget|unmute|copy) return ;;\n");
+        fprintf(stdout, "        esac\n");
+        fprintf(stdout, "    fi\n");
+        fprintf(stdout, "    COMPREPLY=($(compgen -W \"$flags\" -- \"$cur\"))\n");
+        fprintf(stdout, "}\n");
+        fprintf(stdout, "complete -F _tether tether\n");
+    }
+
+    std::string zsh_desc(const std::string& text) {
+        std::string out;
+        for (char c : text) {
+            if (c == ':' || c == '[' || c == ']' || c == '\\')
+                out += '\\';
+            out += c;
+        }
+        return out;
+    }
+
+    void print_zsh_completions() {
+        const auto specs = flag_specs();
+        fprintf(stdout, "#compdef tether\n");
+        fprintf(stdout, "# zsh completion for tether, generated by 'tether --print-completions zsh'\n\n");
+        fprintf(stdout, "_tether() {\n");
+        fprintf(stdout, "    local -a verbs bt_names opts\n");
+        fprintf(stdout, "    verbs=(\n");
+        for (size_t i = 0; i < tether::cli::kVerbCount; ++i) {
+            const auto& verb = tether::cli::kVerbs[i];
+            const char* desc = describe_flag(verb.flag);
+            fprintf(stdout, "        %s\n", sq(std::string(verb.verb) + ":" + zsh_desc(*desc ? _(desc) : "")).c_str());
+        }
+        fprintf(stdout, "        %s\n", sq(std::string("bt:") + zsh_desc(_("Any --bt-<name> flag, as a subcommand."))).c_str());
+        fprintf(stdout, "    )\n");
+        fprintf(stdout, "    bt_names=(\n");
+        for (const auto& spec : specs) {
+            if (spec.flag.rfind("--bt-", 0) != 0)
+                continue;
+            fprintf(stdout, "        %s\n", sq(spec.flag.substr(5) + ":" + zsh_desc(spec.desc)).c_str());
+        }
+        fprintf(stdout, "    )\n");
+        fprintf(stdout, "    opts=(\n");
+        for (const auto& spec : specs) {
+            std::string line = spec.flag + "[" + zsh_desc(spec.desc) + "]";
+            if (spec.takes_file)
+                line += ":file:_files";
+            else if (!spec.values.empty())
+                line += ":value:(" + join(spec.values) + ")";
+            else if (spec.takes_arg)
+                line += ":value:";
+            fprintf(stdout, "        %s\n", sq(line).c_str());
+        }
+        fprintf(stdout, "    )\n");
+        fprintf(stdout, "    if (( CURRENT == 2 )); then\n");
+        fprintf(stdout, "        _describe -t commands 'tether command' verbs\n");
+        fprintf(stdout, "        _arguments -s : \"${opts[@]}\"\n");
+        fprintf(stdout, "        return\n");
+        fprintf(stdout, "    fi\n");
+        fprintf(stdout, "    if (( CURRENT == 3 )) && [[ $words[2] == bt ]]; then\n");
+        fprintf(stdout, "        _describe -t commands 'bluetooth command' bt_names\n");
+        fprintf(stdout, "        return\n");
+        fprintf(stdout, "    fi\n");
+        fprintf(stdout, "    if (( CURRENT == 4 )) && [[ $words[2] == bt ]]; then\n");
+        fprintf(stdout, "        case $words[3] in\n");
+        for (const auto& spec : specs) {
+            if (spec.flag.rfind("--bt-", 0) != 0 || (spec.values.empty() && !spec.takes_file))
+                continue;
+            if (spec.takes_file)
+                fprintf(stdout, "            %s) _files; return ;;\n", spec.flag.substr(5).c_str());
+            else
+                fprintf(stdout,
+                        "            %s) _values 'value' %s; return ;;\n",
+                        spec.flag.substr(5).c_str(),
+                        join(spec.values).c_str());
+        }
+        fprintf(stdout, "        esac\n");
+        fprintf(stdout, "    fi\n");
+        fprintf(stdout, "    if (( CURRENT == 3 )); then\n");
+        fprintf(stdout, "        case $words[2] in\n");
+        fprintf(stdout, "            send) _files; return ;;\n");
+        fprintf(stdout, "            clipboard) _values 'value' on off status; return ;;\n");
+        fprintf(stdout, "            mute) _values 'value' list; return ;;\n");
+        fprintf(stdout, "        esac\n");
+        fprintf(stdout, "    fi\n");
+        fprintf(stdout, "    _arguments -s : \"${opts[@]}\"\n");
+        fprintf(stdout, "}\n\n");
+        fprintf(stdout, "_tether \"$@\"\n");
+    }
+
+    void print_fish_completions() {
+        const auto specs = flag_specs();
+        std::vector<std::string> all_verbs;
+        for (size_t i = 0; i < tether::cli::kVerbCount; ++i)
+            all_verbs.push_back(tether::cli::kVerbs[i].verb);
+        all_verbs.push_back("bt");
+        const std::string no_verb = "not __fish_seen_subcommand_from " + join(all_verbs);
+
+        fprintf(stdout, "# fish completion for tether, generated by 'tether --print-completions fish'\n");
+        fprintf(stdout, "complete -c tether -f\n");
+        for (size_t i = 0; i < tether::cli::kVerbCount; ++i) {
+            const auto& verb = tether::cli::kVerbs[i];
+            const char* desc = describe_flag(verb.flag);
+            fprintf(stdout, "complete -c tether -n %s -a %s -d %s\n", sq(no_verb).c_str(), verb.verb,
+                    sq(*desc ? _(desc) : "").c_str());
+        }
+        fprintf(stdout, "complete -c tether -n %s -a bt -d %s\n", sq(no_verb).c_str(),
+                sq(_("Any --bt-<name> flag, as a subcommand.")).c_str());
+        const auto names = bt_names(specs);
+        const std::string after_bt = "__fish_seen_subcommand_from bt; and not __fish_seen_subcommand_from " + join(names);
+        for (const auto& spec : specs) {
+            if (spec.flag.rfind("--bt-", 0) != 0)
+                continue;
+            fprintf(stdout, "complete -c tether -n %s -a %s -d %s\n", sq(after_bt).c_str(), spec.flag.substr(5).c_str(),
+                    sq(spec.desc).c_str());
+            if (!spec.values.empty())
+                fprintf(stdout, "complete -c tether -n %s -a %s\n",
+                        sq("__fish_seen_subcommand_from " + spec.flag.substr(5)).c_str(),
+                        sq(join(spec.values)).c_str());
+        }
+        fprintf(stdout, "complete -c tether -n '__fish_seen_subcommand_from send' -F\n");
+        fprintf(stdout, "complete -c tether -n '__fish_seen_subcommand_from clipboard' -a 'on off status'\n");
+        fprintf(stdout, "complete -c tether -n '__fish_seen_subcommand_from mute' -a list\n");
+        for (const auto& spec : specs) {
+            std::string line = "complete -c tether ";
+            if (spec.flag.rfind("--", 0) == 0)
+                line += "-l " + spec.flag.substr(2);
+            else
+                line += "-s " + spec.flag.substr(1);
+            if (spec.takes_file)
+                line += " -r -F";
+            else if (!spec.values.empty())
+                line += " -x -a " + sq(join(spec.values));
+            else if (spec.takes_arg)
+                line += " -x";
+            line += " -d " + sq(spec.desc);
+            fprintf(stdout, "%s\n", line.c_str());
+        }
+    }
+
+    int print_completions(const std::string& shell) {
+        if (shell == "bash")
+            print_bash_completions();
+        else if (shell == "zsh")
+            print_zsh_completions();
+        else if (shell == "fish")
+            print_fish_completions();
+        else {
+            fprintf(stderr, "tether: --print-completions takes bash, zsh or fish.\n");
+            return 2;
+        }
+        return 0;
+    }
+
+    int usage_error(const std::string& message) {
+        fprintf(stderr, "%s\n%s\n", message.c_str(), _("Run 'tether --help'."));
+        return 2;
+    }
+
+} // namespace
+
 int main(int argc, char* argv[]) {
     tether::init_locale();
 
@@ -1285,6 +1705,11 @@ int main(int argc, char* argv[]) {
         print_help();
         return 0;
     }
+
+    // Verbs that need something after them, before the parser mistakes the
+    // bare word for an unknown command.
+    if (argc == 2 && std::string(argv[1]) == "bt")
+        return usage_error(_("tether: 'bt' needs a name, e.g. tether bt setup"));
 
     std::string action, arg_val, arg_val2, host = "";
     bool explicit_pair = false;
@@ -1452,13 +1877,40 @@ int main(int argc, char* argv[]) {
             action = "set";
             if (i + 1 < argc && argv[i + 1][0] != '-')
                 arg_val = argv[++i];
+        } else if (arg == "--json") {
+            g_json = true;
+        } else if (arg == "--clipboard-sync") {
+            action = "clipboard_sync";
+            if (i + 1 < argc && argv[i + 1][0] != '-')
+                arg_val = argv[++i];
+        } else if (arg == "--reject") {
+            action = "reject";
+            if (i + 1 < argc && argv[i + 1][0] != '-')
+                arg_val = argv[++i];
+        } else if (arg == "--mute") {
+            action = "mute";
+            if (i + 1 < argc && argv[i + 1][0] != '-')
+                arg_val = argv[++i];
+        } else if (arg == "--unmute") {
+            action = "unmute";
+            if (i + 1 < argc && argv[i + 1][0] != '-')
+                arg_val = argv[++i];
+        } else if (arg == "--print-completions") {
+            return print_completions(i + 1 < argc ? argv[++i] : "");
+        } else if (!arg.empty() && arg[0] == '-') {
+            // TRANSLATORS: {} is the argument as typed.
+            return usage_error(tether::tr_format(_("tether: unknown option '{}'"), arg));
+        } else {
+            // A word nothing above consumed: either a command that does not
+            // exist, or one argument too many.
+            return usage_error(action.empty()
+                                   ? tether::tr_format(_("tether: unknown command '{}'"), arg)
+                                   : tether::tr_format(_("tether: unexpected argument '{}'"), arg));
         }
     }
 
-    if (action.empty()) {
-        debug::log(ERR, _("Unknown action. Run tether --help for options\n"));
-        return 1;
-    }
+    if (action.empty())
+        return usage_error(_("tether: no command given"));
 
     if (action == "install_extension_host")
         return print_extension_host_install();
@@ -1476,10 +1928,11 @@ int main(int argc, char* argv[]) {
 
     // Fast-path local operations that don't need active daemon connection fundamentally
     if (action == "list") {
-        debug::log(INFO, "{}", client.list_devices());
+        fprintf(stdout, "%s\n", client.list_devices().c_str());
         return 0;
     } else if (action == "discover") {
-        debug::log(INFO, "Scanning for tetherd instances on the local network...\n\n");
+        if (!g_json)
+            fprintf(stderr, "%s\n", _("Scanning for tetherd instances on the local network..."));
 
         tether::Crypto::instance().init();
 
@@ -1487,8 +1940,20 @@ int main(int argc, char* argv[]) {
         auto hosts = discovery.discover(timeout_ms);
         auto devices = tether::group_discovered_hosts(hosts, tether::Crypto::instance().get_my_fingerprint());
 
+        if (g_json) {
+            nlohmann::json out = nlohmann::json::array();
+            for (const auto& dev : devices) {
+                nlohmann::json d{{"name", dev.name}, {"fingerprint", dev.fingerprint}};
+                d["known"] = !dev.fingerprint.empty() && tether::Crypto::instance().is_host_known(dev.fingerprint);
+                d["addresses"] = nlohmann::json::array();
+                for (const auto& addr : dev.addresses)
+                    d["addresses"].push_back({{"address", addr.address}, {"port", addr.port}});
+                out.push_back(d);
+            }
+            return print_json(out);
+        }
         if (devices.empty()) {
-            debug::log(INFO, _("  No tetherd instances found.\n"));
+            fprintf(stdout, "%s\n", _("  No tetherd instances found."));
         } else {
             for (const auto& dev : devices) {
                 std::string status = _("[new]");
@@ -1520,21 +1985,11 @@ int main(int argc, char* argv[]) {
 
     // Bind network abstraction natively
     if (!client.connect(host, port)) {
-        // status and pending are what someone runs to find out whether the daemon is up
-        if (action == "status" || action == "pending") {
-            if (host.empty())
-                debug::log(ERR,
-                           _("The daemon is not running, and could not be started. Check the log in "
-                             "$XDG_STATE_HOME/tether, or start it with 'systemctl --user start "
-                             "tetherd.service'.\n"));
-            else
-                debug::log(ERR, _("No daemon answered at {}:{}.\n"), host, port);
-            return 1;
-        }
-        debug::log(
-            ERR,
-            _("Explicit framework connection locally rejected! Did you target explicitly invalid TLS or is daemon "
-              "broken?\n"));
+        // One message for every verb: what is wrong and what to run.
+        if (host.empty())
+            fprintf(stderr, "%s\n", tether::daemon_unreachable_hint().c_str());
+        else
+            fprintf(stderr, "%s\n", tether::tr_format(_("No daemon answered at {}:{}."), host, port).c_str());
         return 1;
     }
 
@@ -1546,21 +2001,38 @@ int main(int argc, char* argv[]) {
 
     std::string err;
     if (action == "accept") {
-        if (arg_val.empty() || !client.accept_device(arg_val)) {
+        if (arg_val.empty())
+            return usage_error(_("tether: accept needs a fingerprint, see 'tether pending'"));
+        if (!client.accept_device(arg_val)) {
             debug::log(ERR, _("Could not reach the daemon.\n"));
             return 1;
         }
-        debug::log(INFO, "Successfully paired device: {}", arg_val);
-    } else if (action == "forget") {
-        if (arg_val.empty()) {
-            debug::log(ERR, _("--forget expects a fingerprint.\n"));
+        fprintf(stdout, "%s\n", tether::tr_format(_("Paired {}."), arg_val).c_str());
+    } else if (action == "reject") {
+        if (arg_val.empty())
+            return usage_error(_("tether: reject needs a fingerprint, see 'tether pending'"));
+        nlohmann::json resp;
+        try {
+            resp = request_reply(client, nlohmann::json{{"command", "reject_device"}, {"fingerprint", arg_val}});
+        } catch (const std::exception& e) {
+            debug::log(ERR, "{}\n", e.what());
             return 1;
         }
+        if (g_json)
+            return print_json(resp);
+        if (resp.value("command", "") != "reject_device_result" || !resp.value("rejected", false)) {
+            debug::log(ERR, _("No pairing request from that fingerprint is waiting.\n"));
+            return 1;
+        }
+        fprintf(stdout, "%s\n", tether::tr_format(_("Rejected {}."), arg_val).c_str());
+    } else if (action == "forget") {
+        if (arg_val.empty())
+            return usage_error(_("tether: forget needs a fingerprint, see 'tether devices'"));
         if (!client.forget_device(arg_val)) {
             debug::log(ERR, _("No paired device with that fingerprint.\n"));
             return 1;
         }
-        debug::log(INFO, "Forgot device: {}", arg_val);
+        fprintf(stdout, "%s\n", tether::tr_format(_("Forgot {}."), arg_val).c_str());
     } else if (action == "pair") {
         char hostname[256] = {};
         gethostname(hostname, sizeof(hostname) - 1);
@@ -1569,28 +2041,103 @@ int main(int argc, char* argv[]) {
             debug::log(ERR, "{}", err);
             return 1;
         }
-        debug::log(INFO, "Pairing response: {}", resp);
+        fprintf(stdout, "%s\n", resp.c_str());
     } else if (action == "get") {
         std::string clip = client.get_clipboard(err);
         if (!err.empty()) {
             debug::log(ERR, "{}", err);
             return 1;
         }
-        debug::log(INFO, "{}", clip);
+        if (g_json)
+            return print_json(nlohmann::json{{"content", clip}});
+        // The bytes as they are, so a pipe gets exactly the clipboard; a
+        // terminal gets the newline it needs to show the prompt cleanly.
+        fwrite(clip.data(), 1, clip.size(), stdout);
+        if (isatty(STDOUT_FILENO) && (clip.empty() || clip.back() != '\n'))
+            fputc('\n', stdout);
+        fflush(stdout);
     } else if (action == "set") {
         if (!client.set_clipboard(arg_val, err)) {
             debug::log(ERR, "{}", err);
             return 1;
         }
     } else if (action == "file") {
-        debug::log(INFO, "Sending {}...", arg_val);
-        if (!client.send_file(arg_val, err)) {
+        if (arg_val.empty())
+            return usage_error(_("tether: send needs a file path"));
+        fprintf(stderr, "%s\n", tether::tr_format(_("Sending {}..."), arg_val).c_str());
+        // A percentage on a terminal only; a log or pipe gets the one line above.
+        const bool show_progress = isatty(STDERR_FILENO);
+        const auto progress = [show_progress](size_t sent, size_t total) {
+            if (!show_progress || total == 0)
+                return;
+            fprintf(stderr, "\r  %3zu%%", sent * 100 / total);
+            if (sent >= total)
+                fputc('\n', stderr);
+            fflush(stderr);
+        };
+        if (!client.send_file(arg_val, err, progress)) {
             debug::log(ERR, _("Transfer Failed: {}"), err);
             return 1;
         }
-        debug::log(INFO, "File transfer delivered.\n");
+        fprintf(stdout, "%s\n", _("File transfer delivered."));
     } else if (action == "native") {
         run_native_messaging_host(client);
+    } else if (action == "clipboard_sync") {
+        if (arg_val == "on" || arg_val == "off")
+            return apply_toggle(client,
+                                "set_clipboard_sync",
+                                "clipboard_sync_enabled",
+                                arg_val == "on",
+                                arg_val == "on" ? _("Clipboard sync is on: what you copy here goes to the iPhone.")
+                                                : _("Clipboard sync is paused: nothing copied here leaves this computer."));
+        if (!arg_val.empty() && arg_val != "status")
+            return usage_error(_("tether: clipboard takes on, off or status"));
+        nlohmann::json status;
+        try {
+            status = request_reply(client, "bt_status");
+        } catch (const std::exception& e) {
+            debug::log(ERR, "{}\n", e.what());
+            return 1;
+        }
+        if (g_json)
+            return print_json(nlohmann::json{{"clipboard_sync_enabled", status.value("clipboard_sync_enabled", true)}});
+        fprintf(stdout,
+                "%s\n",
+                tether::tr_format(_("Clipboard sync: {}"), status.value("clipboard_sync_enabled", true) ? _("on") : _("off"))
+                    .c_str());
+    } else if (action == "mute" || action == "unmute") {
+        const bool mute = action == "mute";
+        if (arg_val.empty() || (mute && arg_val == "list")) {
+            nlohmann::json status;
+            try {
+                status = request_reply(client, "bt_status");
+            } catch (const std::exception& e) {
+                debug::log(ERR, "{}\n", e.what());
+                return 1;
+            }
+            const auto muted = status.value("muted_apps", nlohmann::json::array());
+            if (g_json)
+                return print_json(muted);
+            if (muted.empty()) {
+                fprintf(stdout, "%s\n", _("No iPhone app is muted."));
+                return 0;
+            }
+            for (const auto& app : muted)
+                if (app.is_string())
+                    fprintf(stdout, "  %s\n", app.get<std::string>().c_str());
+            return 0;
+        }
+        const std::string app_id = arg_val;
+        return apply_setting(
+            client,
+            nlohmann::json{{"command", "set_app_muted"}, {"app_id", app_id}, {"muted", mute}},
+            [&app_id, mute](const nlohmann::json& status) {
+                const auto muted = status.value("muted_apps", nlohmann::json::array());
+                const bool listed = std::find(muted.begin(), muted.end(), nlohmann::json(app_id)) != muted.end();
+                return listed == mute;
+            },
+            mute ? tether::tr_format(_("Desktop popups from {} are muted."), app_id)
+                 : tether::tr_format(_("Desktop popups from {} are back."), app_id));
     }
 
     // The Bluetooth commands are what we're checking for version conflicts
@@ -1629,8 +2176,7 @@ int main(int argc, char* argv[]) {
         return print_bt_calls(client);
     } else if (action == "bt_call") {
         if (arg_val.empty()) {
-            debug::log(ERR, _("A number is required, e.g. --bt-call +15551234567\n"));
-            return 1;
+            return usage_error(_("A number is required, e.g. tether bt call +15551234567"));
         }
         nlohmann::json request;
         request["command"] = "bt_call_dial";
@@ -1646,34 +2192,26 @@ int main(int argc, char* argv[]) {
                                                       : _("Hanging up.");
         return run_call_command(client, request, done);
     } else if (action == "bt_calls_enable") {
-        if (arg_val != "on" && arg_val != "off") {
-            debug::log(ERR, _("Expected on or off, e.g. --bt-calls-enable on\n"));
-            return 1;
-        }
-        nlohmann::json request;
-        request["command"] = "bt_set_calls";
-        request["enabled"] = arg_val == "on";
-        if (!client.send(request.dump() + "\n")) {
-            debug::log(ERR, _("Could not reach the daemon.\n"));
-            return 1;
-        }
-        fprintf(stdout, "%s\n", arg_val == "on" ? _("Call control enabled.") : _("Call control disabled."));
+        if (arg_val != "on" && arg_val != "off")
+            return usage_error(_("Expected on or off, e.g. tether bt calls-enable on"));
+        return apply_toggle(client,
+                            "bt_set_calls",
+                            "calls_enabled",
+                            arg_val == "on",
+                            arg_val == "on" ? _("Call control enabled.") : _("Call control disabled."));
     } else if (action == "bt_messages") {
         if (arg_val.empty()) {
-            debug::log(ERR, _("A thread key is required, e.g. --bt-messages tel:+15551234567\n"));
-            return 1;
+            return usage_error(_("A thread key is required, e.g. tether bt messages tel:+15551234567"));
         }
         return print_bt_messages(client, arg_val);
     } else if (action == "bt_send") {
         if (arg_val.empty() || arg_val2.empty()) {
-            debug::log(ERR, _("A conversation and a message are required, e.g. --bt-send tel:+15551234567 \"hi\"\n"));
-            return 1;
+            return usage_error(_("A conversation and a message are required, e.g. tether bt send tel:+15551234567 \"hi\""));
         }
         return send_bt_message(client, arg_val, arg_val2);
     } else if (action == "bt_pair" || action == "bt_unpair") {
         if (arg_val.empty()) {
-            debug::log(ERR, _("A Bluetooth address is required, e.g. --bt-pair AA:BB:CC:DD:EE:FF\n"));
-            return 1;
+            return usage_error(_("A Bluetooth address is required, e.g. tether bt pair AA:BB:CC:DD:EE:FF"));
         }
         nlohmann::json extra = nlohmann::json::object();
         if (action == "bt_pair" && explicit_pair)
@@ -1682,68 +2220,48 @@ int main(int argc, char* argv[]) {
     } else if (action == "bt_solicit") {
         return run_bt_transaction(client, "bt_solicit");
     } else if (action == "bt_enable") {
-        if (arg_val != "on" && arg_val != "off") {
-            debug::log(ERR, _("Expected on or off, e.g. --bt-enable off\n"));
-            return 1;
-        }
-        nlohmann::json request;
-        request["command"] = "bt_set_enabled";
-        request["enabled"] = arg_val == "on";
-        if (!client.send(request.dump() + "\n")) {
-            debug::log(ERR, _("Could not reach the daemon.\n"));
-            return 1;
-        }
-        if (arg_val == "on") {
-            fprintf(stdout, _("Bluetooth enabled.\n"));
-        } else {
-            fprintf(stdout,
-                    _("Bluetooth disabled. Tether will not reconnect the iPhone. A link that is\n"
-                      "already up stays up until you disconnect it or the phone goes out of range.\n"));
-        }
+        if (arg_val != "on" && arg_val != "off")
+            return usage_error(_("Expected on or off, e.g. tether bt enable off"));
+        return apply_toggle(client,
+                            "bt_set_enabled",
+                            "enabled",
+                            arg_val == "on",
+                            arg_val == "on"
+                                ? _("Bluetooth enabled.")
+                                : _("Bluetooth disabled. Tether will not reconnect the iPhone. A link that is\n"
+                                    "already up stays up until you disconnect it or the phone goes out of range."));
     } else if (action == "bt_ancs" || action == "bt_ancs_content") {
         const bool content = action == "bt_ancs_content";
-        if (arg_val != "on" && arg_val != "off") {
-            debug::log(ERR, _("Expected on or off, e.g. {} on\n"), content ? "--bt-ancs-content" : "--bt-ancs");
-            return 1;
-        }
-        nlohmann::json request;
-        request["command"] = content ? "bt_set_ancs_content" : "bt_set_ancs";
-        request["enabled"] = arg_val == "on";
-        if (!client.send(request.dump() + "\n")) {
-            debug::log(ERR, _("Could not reach the daemon.\n"));
-            return 1;
-        }
+        if (arg_val != "on" && arg_val != "off")
+            return usage_error(tether::tr_format(_("Expected on or off, e.g. tether bt {} on"),
+                                                 content ? "ancs-content" : "ancs"));
         const bool on = arg_val == "on";
-        fprintf(stdout,
-                "%s\n",
-                content ? (on ? _("Notification contents enabled.") : _("Notification contents disabled."))
-                        : (on ? _("Notification mirroring enabled.") : _("Notification mirroring disabled.")));
+        return apply_toggle(client,
+                            content ? "bt_set_ancs_content" : "bt_set_ancs",
+                            content ? "ancs_content_enabled" : "ancs_enabled",
+                            on,
+                            content ? (on ? _("Notification contents enabled.") : _("Notification contents disabled."))
+                                    : (on ? _("Notification mirroring enabled.") : _("Notification mirroring disabled.")));
     } else if (action == "bt_retention") {
-        if (arg_val != "encrypted" && arg_val != "plaintext" && arg_val != "none") {
-            debug::log(ERR, _("Expected encrypted, plaintext or none, e.g. --bt-retention encrypted\n"));
-            return 1;
-        }
+        if (arg_val != "encrypted" && arg_val != "plaintext" && arg_val != "none")
+            return usage_error(_("Expected encrypted, plaintext or none, e.g. tether bt retention encrypted"));
         if (arg_val == "none")
-            fprintf(stdout, _("Deleting stored messages and contacts.\n"));
-
-        nlohmann::json request;
-        request["command"] = "bt_set_retention";
-        request["retention"] = arg_val;
-        if (!client.send(request.dump() + "\n")) {
-            debug::log(ERR, _("Could not reach the daemon.\n"));
-            return 1;
-        }
-        fprintf(stdout, _("Retention set to %s.\n"), arg_val.c_str());
+            fprintf(stderr, "%s\n", _("Deleting stored messages and contacts."));
+        const std::string retention = arg_val;
+        return apply_setting(
+            client,
+            nlohmann::json{{"command", "bt_set_retention"}, {"retention", retention}},
+            [&retention](const nlohmann::json& status) { return status.value("retention", "") == retention; },
+            tether::tr_format(_("Retention set to {}."), retention));
     } else if (action == "bt_adapter") {
         if (arg_val.empty()) {
-            debug::log(ERR, _("Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"));
-            return 1;
+            return usage_error(_("Expected a controller, e.g. tether bt adapter hci1, or tether bt adapter auto"));
         }
         const bool automatic = arg_val == "auto";
 
         nlohmann::json status;
         try {
-            status = nlohmann::json::parse(client.send_and_wait("{\"command\":\"bt_status\"}\n"));
+            status = request_reply(client, "bt_status");
         } catch (const std::exception&) {
             debug::log(ERR, _("Could not read Bluetooth status from the daemon.\n"));
             return 1;
@@ -1760,17 +2278,13 @@ int main(int argc, char* argv[]) {
             return 1;
         }
 
-        nlohmann::json request;
-        request["command"] = "bt_set_adapter";
-        request["adapter"] = automatic ? "" : arg_val;
-        if (!client.send(request.dump() + "\n")) {
-            debug::log(ERR, _("Could not reach the daemon.\n"));
-            return 1;
-        }
-        if (automatic)
-            fprintf(stdout, _("Controller selection is automatic: the first powered one.\n"));
-        else
-            fprintf(stdout, "%s\n", tether::tr_format(_("Using controller {}."), arg_val).c_str());
+        const std::string adapter = automatic ? "" : arg_val;
+        return apply_setting(
+            client,
+            nlohmann::json{{"command", "bt_set_adapter"}, {"adapter", adapter}},
+            [&adapter](const nlohmann::json& reply) { return reply.value("adapter", "\x01") == adapter; },
+            automatic ? std::string(_("Controller selection is automatic: the first powered one."))
+                      : tether::tr_format(_("Using controller {}."), arg_val));
     }
 
     return 0;

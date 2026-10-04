@@ -1,5 +1,16 @@
 # Bluetooth: iPhone messages and notifications
 
+> **New here? Start with the [Bluetooth quickstart](BLUETOOTH-QUICKSTART.md).**
+> It is one page: the five-step setup and a table of what each status line
+> means and what to run. This file is the long form: how each profile works,
+> what the setup commands change and why, calls, AirPods, and the
+> troubleshooting rows that still apply to current builds.
+>
+> The dated engineering log and the troubleshooting rows that were fixed in
+> an earlier release are kept, unchanged, in [Appendix: history](#appendix-history)
+> at the end of this file, so nothing an upstream issue links to is lost.
+> Commands are written as `tether bt <name>` throughout.
+
 Tether accesses SMS/iMessage and other apps' notifications via Bluetooth because iOS apps are
 not allowed to access these. It presents the Linux machine to iOS as a paired
 Bluetooth accessory. No iOS-side code is involved.
@@ -22,7 +33,7 @@ Not every machine can do all of it, so Tether resolves one of two modes from liv
   BlueZ >= 5.86 running with its experimental bearer API (org.bluez.Bearer.LE1).
 - Compatibility mode: MAP + PBAP only. Messages and contacts work, notification mirroring does not (older BlueZ).
 
-`tether --bt-status` reports which applies. `scripts/bt-probe.sh` is a
+`tether bt status` reports which applies. `scripts/bt-probe.sh` is a
 repo-only development probe that covers a few things the daemon does not check
 (BlueZ version, `obex.service`, tooling); it is not installed by any package.
 `scripts/bt-probe.sh --calls` is a separate mode for the call path, meant to be run
@@ -33,7 +44,7 @@ while a call is connected -- see "Calls".
 Two of them need a system change, and both are reported with the exact command by:
 
 ```bash
-tether --bt-setup
+tether bt setup
 ```
 
 It prints only what is still missing and never applies anything: both steps
@@ -59,13 +70,13 @@ class, reads it back, and retries for ten seconds.
 
 **A portable build has no unit on disk to enable**, since neither the AppImage nor the Flatpak
 can write a system directory. That command fails there with `Unit tether-btclass@hci0.service
-does not exist`. The unit text is compiled into the binary instead, and `--bt-setup` prints the
+does not exist`. The unit text is compiled into the binary instead, and `tether bt setup` prints the
 form that applies to the running build: the AppImage prints `sudo "$APPIMAGE"
 --install-btclass-unit` to write the unit out first, everything else prints it as a
-here-document. Take the command from `--bt-setup` rather than from here.
+here-document. Take the command from `tether bt setup` rather than from here.
 
 **BlueZ needs the experimental bearer API** for ANCS, and it must be active
-*before* pairing: a bond made without it has no LE half. `--bt-setup` prints the
+*before* pairing: a bond made without it has no LE half. `tether bt setup` prints the
 drop-in command:
 
 ```bash
@@ -89,7 +100,7 @@ disabled for the same reason, and `--install-btclass-unit` writes it without
 enabling it on the builds that have no package to ship it.
 
 **Without systemd** (Artix, Void, Devuan) there is no unit to enable and no drop-in
-to write, so `--bt-setup` prints edits to `/etc/bluetooth/main.conf` instead:
+to write, so `tether bt setup` prints edits to `/etc/bluetooth/main.conf` instead:
 `Experimental = true`, the same switch as `--experimental`, and `Class = 0x000408`,
 applied to the running adapter with `btmgmt`. Restart `bluetoothd` with the machine's
 own service manager. The class setting only holds where nothing overrides it, which is
@@ -133,9 +144,9 @@ only then falls back to an explicit pair, and never falls back at all if the num
 was declined on this computer. A fallback bond is **not** remembered as the preferred strategy
 while it comes back BR/EDR-only, so the next re-pair tries connect-first again from scratch;
 latching it would put notifications permanently out of reach. The transaction that bonded is
-reported as `auth_strategy_used` by `tether --bt-diagnostics`.
+reported as `auth_strategy_used` by `tether bt diagnostics`.
 
-`tether --bt-pair <addr> --explicit-pair` forces the fallback for one transaction. Use it when
+`tether bt pair <addr> --explicit-pair` forces the fallback for one transaction. Use it when
 connect-first is refused on every attempt and messages and contacts are worth more than
 notifications.
 
@@ -347,7 +358,7 @@ What differs between the two sources is what they can report and carry:
 PipeWire's `AudioGateway1` carries no HFP indicators at all, so the payload marks them
 absent (`indicators: false`) rather than reporting their defaults, and both the CLI and
 the Calls page drop that line instead of claiming "No service" for a phone that has
-service. `--bt-call-audio on` calls `AudioGatewayTransport1.Activate()`; `off` sets
+service. `tether bt call-audio on` calls `AudioGatewayTransport1.Activate()`; `off` sets
 `RejectSCO`, which gates the next voice link rather than tearing down one already up.
 
 ### Getting the call audio onto the desktop instead
@@ -448,7 +459,7 @@ restart bluetooth`, `systemctl --user restart wireplumber`, and reconnect the ph
 
 ### Turning it on
 
-`tether --bt-calls-enable on`, or the Calls page in the GTK app. Off by default.
+`tether bt calls-enable on`, or the Calls page in the GTK app. Off by default.
 
 It also widens the pairing agent's service whitelist to the hands-free and headset
 UUIDs (`agent.cpp` `is_authorized_service`), which the iPhone authorizes against during
@@ -458,14 +469,14 @@ keeps working; only a fresh pairing goes through the agent.
 ### Commands
 
 ```bash
-tether --bt-calls                    # what is ringing, dialing or connected
-tether --bt-call +15555550123        # dial
-tether --bt-answer                   # answer the ringing call
-tether --bt-hangup                   # end every call
-tether --bt-calls-enable on|off
+tether bt calls                    # what is ringing, dialing or connected
+tether bt call +15555550123        # dial
+tether bt answer                   # answer the ringing call
+tether bt hangup                   # end every call
+tether bt calls-enable on|off
 ```
 
-`tether --bt-connection` reports the gateway alongside the other profiles, with the
+`tether bt connection` reports the gateway alongside the other profiles, with the
 carrier, signal and phone battery HFP supplies.
 
 Dial strings are normalized in the daemon: a leading `+` and digits survive, spaces,
@@ -487,9 +498,9 @@ the narrower check; it rules out the `*`/`#` supplementary-service codes deliber
 ## AirPods
 
 Battery for the buds and the case, the listening mode, and in-ear detection, in the
-Devices list and from `tether --bt-airpods`. A single stem press plays and pauses here.
+Devices list and from `tether bt airpods`. A single stem press plays and pauses here.
 
-**All of it is off until switched on** -- `tether --bt-airpods-enable on`. See "Standing
+**All of it is off until switched on** -- `tether bt airpods-enable on`. See "Standing
 down" below.
 
 It is the one feature here that does not go through BlueZ. AirPods report battery over
@@ -635,7 +646,7 @@ take-over `smart_routing_hijack()`: `localscore`, `reason` `Hijackv2`, `audioRou
 ### Listening mode
 
 Off, Transparency, Adaptive and Noise Cancellation, set from the AirPods page in the GTK
-app or with `tether --bt-airpods-mode <off|anc|transparency|adaptive>`.
+app or with `tether bt airpods-mode <off|anc|transparency|adaptive>`.
 
 Sent and received on the same 11-byte shape, `04 00 04 00 09 00 0D [mode] 00 00 00`, with
 the mode at offset 7. The wire values are one above the order the modes are usually listed
@@ -669,7 +680,7 @@ policy and the UI use.
 Taking a bud out can pause whatever is playing locally, over MPRIS. It is **off by
 default** -- `airpods_pause` in `bluetooth.json`, `never`, `one-removed` or `both-removed`
 -- for the same reason call control is: nothing reaches out and touches the user's session
-until they ask for it. `tether --bt-airpods-pause one-removed`, or the dropdown on the
+until they ask for it. `tether bt airpods-pause one-removed`, or the dropdown on the
 AirPods page.
 
 The policy is `ear_media_action()`, kept pure so its awkward cases are settled by tests
@@ -693,7 +704,7 @@ thread on one is acceptable.
 
 ### Handing the buds to the phone for a call
 
-Off by default. `tether --bt-airpods-handoff on`, or the checkbox on the AirPods page.
+Off by default. `tether bt airpods-handoff on`, or the checkbox on the AirPods page.
 
 There are two ways to do it, and which one runs is decided by the machine, not by a
 setting: **ownership handoff** when the adapter presents itself as Apple hardware, and
@@ -870,7 +881,7 @@ Tether never writes the file. It reads the result and says what is missing.
 
 ### Standing down
 
-`airpods_enabled` in `bluetooth.json`, **off by default**. `tether --bt-airpods-enable on`, or the
+`airpods_enabled` in `bluetooth.json`, **off by default**. `tether bt airpods-enable on`, or the
 checkbox at the top of the AirPods page. While it is off Tether opens no AAP channel at all: no
 battery, no listening mode, no in-ear pausing, no handoff, and nothing to fight another AirPods
 program for. It is a setting rather than a race to be won: see below.
@@ -919,69 +930,57 @@ These are properties of what iOS exposes:
 
 ## Troubleshooting
 
-Start with the read-only checks. `tether --bt-setup` says what system setup is
-still missing, `tether --bt-status` says what the hardware and the stack can do,
-and `tether --bt-connection` says what is actually up right now. From a source
+Start with the read-only checks. `tether bt setup` says what system setup is
+still missing, `tether bt status` says what the hardware and the stack can do,
+and `tether bt connection` says what is actually up right now. From a source
 checkout, `./scripts/bt-probe.sh` adds BlueZ-version, tooling, and `obexd`
 checks the daemon does not make.
 
 | Symptom | Cause | What to do |
 |---|---|---|
-| `systemctl enable --now tether-btclass@hci0` hangs in `activating (start)` forever | `btmgmt` epolls its stdin before running the command, and epoll rejects the `/dev/null` systemd hands it, so it waits having done nothing | Update the unit -- it pipes into `btmgmt` now. On an older build, `sudo btmgmt class 4 8` by hand sets the class until `bluetoothd` restarts, see 2026-09-01 below |
-| `systemctl enable --now tether-btclass@hci0` says `Unit tether-btclass@hci0.service does not exist` | A portable build (AppImage, Flatpak) installed no unit -- only the distro packages do | `tether --bt-setup` and run the command it prints, which writes the unit first, see 2026-09-05 below |
-| `tether-btclass@hci0` fails with `Invalid Index`, having worked for months | The controller re-enumerated -- a failed firmware handshake resets it over USB and it comes back as `hci1` -- so the instance name points at an adapter that no longer exists | Update the unit -- it resolves the adapter itself now and the instance name is only a hint, see 2026-09-11 below. By hand, `ls /sys/class/bluetooth` names the live adapter |
-| `tether --bt-setup` keeps printing the experimental step after the drop-in was applied and `bluetooth` restarted | Before 0.2.35 the check read `/proc`, which a Flatpak sandbox cannot see, and which `main.conf` `Experimental = true` never touches | Update. Confirm the flag itself with `busctl --system introspect org.bluez /org/bluez/hci0 \| grep AdvertisementMonitor` -- a hit means the experimental API is on, see 2026-09-20 below |
+| `systemctl enable --now tether-btclass@hci0` says `Unit tether-btclass@hci0.service does not exist` | A portable build (AppImage, Flatpak) installed no unit -- only the distro packages do | `tether bt setup` and run the command it prints, which writes the unit first, see 2026-09-05 below |
 | Messages and contacts worked, then stopped, and the error mentions a service record | `bluetoothd` restarted and reset the Class of Device | `sudo systemctl enable --now tether-btclass@hci0`, then re-pair if the phone dropped the bond |
-| The phone never offers notifications / Sync Contacts | The class is wrong, or the ANCS advertisement is not running | Check for `class=ok` in `tether --bt-status`, can take minutes |
+| The phone never offers notifications / Sync Contacts | The class is wrong, or the ANCS advertisement is not running | Check for `class=ok` in `tether bt status`, can take minutes |
 | MAP or PBAP reports `forbidden` | The matching toggle on the phone is off | Turn it on. This is not a pairing failure |
-| Pairing never starts, and the only log line is a profile connect refused with `Connection refused (111)` | `Device1.Connect()` induces pairing only as a side effect of a profile connect, and this phone refuses that profile from an unbonded device | Nothing. Tether retries the transaction as an explicit `Device1.Pair()` on its own. To go straight there, `tether --bt-pair <addr> --explicit-pair` |
-| The phone shows a pairing code, then "Pairing Unsuccessful" a moment later, and the daemon reports the transaction failed about 90s after `confirm` | `tetherd` has no display, so the confirmation dialog could not be shown, and an unshowable dialog used to count as a refusal | Fixed. The comparison now goes to whichever client started the pairing -- the CLI prompts on the terminal, the GTK app opens its own dialog. On an older build, start `tetherd` from a graphical session so it inherits `DISPLAY` or `WAYLAND_DISPLAY` |
-| Pairing fails a few hundred ms after `confirm`, and `tetherd.log` says `tether-dialog: error while loading shared libraries: libgtk-layer-shell.so.0` | `tether-dialog` is linked against `gtk-layer-shell`, which the package did not depend on, so it died in the dynamic loader with exit 127 -- read as the user refusing | Install `gtk-layer-shell`. Fixed in the package dependencies, and a dialog that cannot run now routes the comparison to the client that started the pairing instead of declining it -- see 2026-08-29 below |
+| Pairing never starts, and the only log line is a profile connect refused with `Connection refused (111)` | `Device1.Connect()` induces pairing only as a side effect of a profile connect, and this phone refuses that profile from an unbonded device | Nothing. Tether retries the transaction as an explicit `Device1.Pair()` on its own. To go straight there, `tether bt pair <addr> --explicit-pair` |
 | MAP reports `busy`, or the transport says `Connection refused (111)` on an already-paired phone | Another computer holds the iPhone's single MAP session | Stop the other client |
-| Pairing fails with `br-connection-key-missing` | A stale bond on one side, or the adapter is not `Pairable` | Delete the computer's entry on the phone (Forget This Device) and `tether --bt-unpair <addr>` locally, then pair again |
+| Pairing fails with `br-connection-key-missing` | A stale bond on one side, or the adapter is not `Pairable` | Delete the computer's entry on the phone (Forget This Device) and `tether bt unpair <addr>` locally, then pair again |
 | The phone shows two entries for this computer | A failed pairing left both a Classic and an LE record | Delete both on the phone before retrying |
 | LE never connects and the log repeats `org.bluez.Error.InProgress` | BlueZ is holding an auto-connect registration that never completed | `sudo systemctl restart bluetooth` -- nothing short of that clears it, see 2026-08-19 below. With `tether-btclass@hci0` enabled the class survives the restart |
 | The log says `could not re-arm the ANCS solicitation` | BlueZ refused to register the advertisement, so nothing is on air for the iPhone to answer | `sudo systemctl restart bluetooth`. Nothing else brings it back, and the LE link cannot form without it |
-| The log repeats `RegisterAdvertisement failed: ... AlreadyExists` for minutes after one timeout | A registration whose call timed out is still held by BlueZ, and the local flag said otherwise so nothing released it | Fixed. A timed-out registration is now released and an `AlreadyExists` is adopted rather than discarded -- see 2026-09-07 below |
-| Pairing warns `RegisterAdvertisement ... doesn't exist` on `org.bluez.LEAdvertisingManager1` | BlueZ exported no advertising manager on this adapter at all, because the controller reports no LE advertising support. Distinct from the row above, where the interface exists and the call is refused | Restarting `bluetooth.service` changes nothing. Confirm with `./scripts/bt-probe.sh`; the only route to ANCS is a controller that can advertise, selected with `tether --bt-adapter <hciN>` -- see 2026-09-03 below |
+| Pairing warns `RegisterAdvertisement ... doesn't exist` on `org.bluez.LEAdvertisingManager1` | BlueZ exported no advertising manager on this adapter at all, because the controller reports no LE advertising support. Distinct from the row above, where the interface exists and the call is refused | Restarting `bluetooth.service` changes nothing. Confirm with `./scripts/bt-probe.sh`; the only route to ANCS is a controller that can advertise, selected with `tether bt adapter <hciN>` -- see 2026-09-03 below |
 | LE never connects and the log repeats `le-connection-abort-by-local` | Something on this side is cancelling the connection. Tether's own cause was a `PreferredBearer` write racing the async connect, fixed; anything else writing that property during a connect will do the same | Check no other Bluetooth tool is driving the same device. The phone is not the cause: `abort-by-local` means the local host cancelled |
-| Messages stopped after turning notification mirroring off | Fixed. The toggle used to restart supervision, which abandoned the MAP and PBAP sessions at obexd instead of removing them, and the iPhone serves one MAP session at a time | Nothing. Mirroring is switched in place now, and a dropped profile supervisor releases its sessions. On an older build, restart `tetherd` |
-| Notifications stopped and never came back, while messages and contacts kept working | Fixed. The bearer supervisor used to stop retrying LE after six attempts, and only a Classic drop or a daemon restart re-armed it | Nothing. The solicitation is kept on air whenever LE is down, which is what the iPhone answers -- see 2026-08-22 |
-| `tether --bt-status` reports `Bond: BR/EDR only` | The bond was made without cross-transport key derivation, so it has no LE half and can never carry ANCS | Forget this computer on the iPhone and pair again -- it can take more than one attempt, the derivation is flaky on identical inputs (2026-08-25). Check `secure-connections` in the same output first: re-pairing cannot help while it is off |
-| Walked back into range and nothing reconnected for minutes | Fixed. The ANCS advert was gated on the Classic link, and the Classic backoff had no event that ended the absence | Nothing. The advert stays on air whenever LE is down, and an LE link coming up clears the Classic backoff -- see 2026-08-22 |
+| `tether bt status` reports `Bond: BR/EDR only` | The bond was made without cross-transport key derivation, so it has no LE half and can never carry ANCS | Forget this computer on the iPhone and pair again -- it can take more than one attempt, the derivation is flaky on identical inputs (2026-08-25). Check `secure-connections` in the same output first: re-pairing cannot help while it is off |
 | Startup logs `StartNotify not ready yet (InProgress)` for up to a minute | GATT discovery is still running on the new LE link | Nothing. It subscribes on its own. Only treat it as the 2026-08-19 hang if the LE link never comes up |
-| `tether --bt-connection` reports LE and messages up but `Notifications: no`, for hours | Fixed. The LE link was opened by the dial and carries no ANCS. A connected link used to take the solicitation off air, so the phone was never asked for the service | Nothing. The advert goes back on air over a link that has stayed up without ANCS -- see 2026-08-23. To clear it by hand on an older build, `tether --bt-solicit`; do not re-pair, and do not cycle the phone's Bluetooth |
-| LE never comes up on a `BR/EDR + LE` bond, the advert is on air, and cycling the phone's Bluetooth changes nothing | The bond is pinned to `PreferredBearer=bredr`, so the inbound LE link the iPhone opens is never accepted | Fixed. The supervisor hands the preference back to `le` once the Classic link has settled, on every bond including older ones. **Re-pairing was never the fix** -- the Classic fallback re-pinned it on the next drop -- see 2026-09-07 below. `tether --bt-diagnostics` reports `preferred_bearer`; by hand it is `busctl set-property org.bluez /org/bluez/hci0/dev_<ADDR> org.bluez.Device1 PreferredBearer s le` |
-| `tether --bt-connection` says `LE: yes` and `Notifications: yes`, but nothing arrives, and only toggling Bluetooth on the iPhone fixes it | The LE bearer dropped while Classic stayed up, and BlueZ left `Notifying` set on the ANCS characteristics, so the daemon read the dead link as live and stopped trying to recover it | Fixed. `le_link_up()` now requires `ServicesResolved` alongside `Notifying` -- see 2026-09-07 below. On an older build, toggling the phone's Bluetooth is the only remedy, which is why it was the only one that ever worked |
-| Notifications go quiet after a reconnect and dismissing one logs `ATT error: 0xa2`, with `ancs_ready: true` | Fixed. ANCS UIDs are per-connection counters, and the reset for them was bound to the device path -- which the bearer grace window deliberately holds across exactly the reconnect that rotates them | Nothing. The reset now runs when the notification subscription comes up -- see 2026-09-08 below. On an older build, restarting the daemon clears it until the next reconnect |
 | The status says the iPhone is not answering on LE, and its permission is on | The phone's Bluetooth stack is wedged, which the granted permission does not prevent | Turn Bluetooth off and back on **on the iPhone**. Re-pairing and re-toggling the permission do not clear this |
-| The status says this computer is not putting the notification request on air | The adapter reports LE advertising support and BlueZ is holding no advertising instance for it, so the iPhone is never asked for the service | Nothing on the iPhone, and re-pairing will not help. Check `controller` in `tether --bt-diagnostics` and try another with `tether --bt-adapter <hciN>` -- see 2026-09-04 below |
-| Everything connects but `ancs_ready` stays false | Compatibility mode, or iOS has not authorized notification content yet | Check `Mode:` in `tether --bt-status`. In full mode the daemon retries, the first request returns `NotPermitted` until the prompt on the phone is approved |
+| The status says this computer is not putting the notification request on air | The adapter reports LE advertising support and BlueZ is holding no advertising instance for it, so the iPhone is never asked for the service | Nothing on the iPhone, and re-pairing will not help. Check `controller` in `tether bt diagnostics` and try another with `tether bt adapter <hciN>` -- see 2026-09-04 below |
+| Everything connects but `ancs_ready` stays false | Compatibility mode, or iOS has not authorized notification content yet | Check `Mode:` in `tether bt status`. In full mode the daemon retries, the first request returns `NotPermitted` until the prompt on the phone is approved |
 | A group conversation cannot be replied to | Working as designed until the route is unambiguous | The thread's `reply_reason` says which condition failed |
-| The iPhone never offers the "Show Notifications" toggle, and messages and contacts work | Fixed. A BR/EDR-only bond used to latch notification mirroring off in the config, which takes the ANCS solicitation off air -- so the phone is never asked for the service | Nothing. On an older build, `tether --bt-ancs on` then `tether --bt-solicit`; `tether --bt-status` now shows mirroring under `Notifications:` -- see 2026-09-01 |
-| Pairing bonds but the LE half never derives, on a machine with a USB dongle plugged in | Tether used the first powered controller, which is the dongle, not the built-in one | `tether --bt-status` marks the controller in use; `tether --bt-adapter <hciN>` picks another -- see 2026-09-01 |
+| Pairing bonds but the LE half never derives, on a machine with a USB dongle plugged in | Tether used the first powered controller, which is the dongle, not the built-in one | `tether bt status` marks the controller in use; `tether bt adapter <hciN>` picks another -- see 2026-09-01 |
 | The link reads down forever with `br-connection-unknown`, while messages, contacts and notifications all work | This computer offers the iPhone no BR/EDR profile to connect to, and BlueZ only reports a link up while some local profile is connected | Nothing. Tether no longer waits on that link -- see 2026-08-23 below. Call support does not change this: BlueZ's hands-free profile is not one of the local profiles BlueZ counts |
 | The iPhone's audio moves to the computer when Tether connects | The machine advertises itself as a Bluetooth speaker/headset, and iOS routes to it. Not caused by Tether beyond bringing the link up | See "Keeping the phone's audio on the phone" below |
 | After this computer takes the AirPods, the iPhone plays on the computer and needs the AirPods picked in Control Center | `a2dp_sink` makes the computer a speaker for the phone, and iOS falls back to the last one it had | See "Keeping the phone's audio on the phone" below |
-| `tether --bt-calls` reports call control off | PipeWire took the profile *and* its telephony D-Bus service is off, the iPhone reconnected on its own and never opened hands-free, or `bluetoothd` is running without `--experimental` | Either give BlueZ the profile by dropping `hfp_hf` from `bluez5.roles`, or set `bluez5.telephony-dbus-service = true` and let Tether drive PipeWire's gateway -- see "Calls". The daemon cycles the BR/EDR bearer once per outage for the second cause; confirm with `busctl --system tree org.bluez \| grep telephony` and `busctl --user tree org.pipewire.Telephony` |
-| AirPods are listed but the battery stays blank, and the row says another program is using the channel | The AAP channel takes one client, and something else has it | Stop the other AirPods program (LibrePods, AC, a status-bar widget that reads battery), or hand it over with `tether --bt-airpods-enable off` |
+| `tether bt calls` reports call control off | PipeWire took the profile *and* its telephony D-Bus service is off, the iPhone reconnected on its own and never opened hands-free, or `bluetoothd` is running without `--experimental` | Either give BlueZ the profile by dropping `hfp_hf` from `bluez5.roles`, or set `bluez5.telephony-dbus-service = true` and let Tether drive PipeWire's gateway -- see "Calls". The daemon cycles the BR/EDR bearer once per outage for the second cause; confirm with `busctl --system tree org.bluez \| grep telephony` and `busctl --user tree org.pipewire.Telephony` |
+| AirPods are listed but the battery stays blank, and the row says another program is using the channel | The AAP channel takes one client, and something else has it | Stop the other AirPods program (LibrePods, AC, a status-bar widget that reads battery), or hand it over with `tether bt airpods-enable off` |
 | Setting the AirPods listening mode to `off` does nothing, while the other three work | The buds declined it. Apple leaves Off out of the noise-control rotation by default on Pro models, and there is no refusal to report | Add Off to the rotation on the phone, under Settings > Bluetooth > (i) > Noise Control. Tether keeps showing the mode the buds are actually in |
-| The AirPods handoff checkbox is greyed out | Neither path is available: the adapter does not present itself as Apple hardware, so handoff would have to trigger on the iPhone's call state, and call control is off | Set the adapter Device ID for ownership handoff, or turn on calls: `tether --bt-calls-enable on` |
-| A call started but the AirPods stayed on this computer | They were not connected here when it started, handoff is off, or the call was dialled from this computer | Nothing to do in the first and last case -- pick the AirPods on the phone. Otherwise `tether --bt-airpods-handoff on` |
-| Music resumed on the computer's speakers after a call | Fixed. A reclaim now waits for the buds' sink to come back before resuming | Nothing. `pactl` must be on `PATH` for the wait to work |
-| A call dialled from this computer is routed to it by the iPhone and nobody hears anything | Stock `bluez5.roles` carries `hfp_hf`, so PipeWire owns the profile and rejects the SCO by default (`bluez5.telephony.default-reject-sco`). iOS routes a call to the unit that dialled it and does not reconsider, so the audio is offered to a machine that is refusing it | `tether --bt-call-audio on` accepts it for the current call. To keep call audio on the phone, where the AirPods are, drop `hfp_hf` per "Either stack can serve the calls" and reconnect |
-| `--bt-call-audio on` answers `InvalidState` | `Activate` applies to audio the phone is offering right now, and there is none pending | Nothing. The `RejectSCO` half is applied either way, so the next offer is accepted |
+| The AirPods handoff checkbox is greyed out | Neither path is available: the adapter does not present itself as Apple hardware, so handoff would have to trigger on the iPhone's call state, and call control is off | Set the adapter Device ID for ownership handoff, or turn on calls: `tether bt calls-enable on` |
+| A call started but the AirPods stayed on this computer | They were not connected here when it started, handoff is off, or the call was dialled from this computer | Nothing to do in the first and last case -- pick the AirPods on the phone. Otherwise `tether bt airpods-handoff on` |
+| A call dialled from this computer is routed to it by the iPhone and nobody hears anything | Stock `bluez5.roles` carries `hfp_hf`, so PipeWire owns the profile and rejects the SCO by default (`bluez5.telephony.default-reject-sco`). iOS routes a call to the unit that dialled it and does not reconsider, so the audio is offered to a machine that is refusing it | `tether bt call-audio on` accepts it for the current call. To keep call audio on the phone, where the AirPods are, drop `hfp_hf` per "Either stack can serve the calls" and reconnect |
+| `tether bt call-audio on` answers `InvalidState` | `Activate` applies to audio the phone is offering right now, and there is none pending | Nothing. The `RejectSCO` half is applied either way, so the next offer is accepted |
 | The stem swipe changes the iPhone's volume, not this computer's | The buds send volume to whichever host owns them, and only ownership handoff makes that this machine. Up to 0.2.31, buds that report an owning iPhone as `0x17` were never claimed at all | Set the adapter Device ID, per "Presenting as Apple hardware". On `0x17` models, update; see 2026-09-12 below |
-| The AirPods came back after a call but playback did not resume | Fixed. Disconnecting the buds for the call used to clear the remembered players, so there was nothing left to resume | Nothing. Press play on an older build |
 | The AirPods did not come back after a call | The phone still had them after three attempts, so Tether gave up rather than fight it | Reconnect them from the phone or the Devices list. Playback is deliberately left paused |
-| Playback does not pause when a bud comes out | Pause on removal is off, which is the default | Set it on the AirPods page, or `tether --bt-airpods-pause one-removed` |
+| Playback does not pause when a bud comes out | Pause on removal is off, which is the default | Set it on the AirPods page, or `tether bt airpods-pause one-removed` |
 | Playback pauses on removal but never resumes | Something else paused or stopped it in between, so the pause is no longer Tether's to undo. Or the buds disconnected, which deliberately leaves it paused | Press play. Both are working as designed |
-| AirPods are connected but Tether shows no battery, and the page says it is not managing them | AirPods management is off, which is the default | `tether --bt-airpods-enable on`, or the checkbox on the AirPods page |
-| AirPods do not appear in the Devices list at all | They are not connected, or BlueZ has never read their SDP record so there is no Modalias and the name does not contain "airpod" | Connect them, then `tether --bt-devices` -- the row carries an `airpods` flag when Tether recognizes them |
+| AirPods are connected but Tether shows no battery, and the page says it is not managing them | AirPods management is off, which is the default | `tether bt airpods-enable on`, or the checkbox on the AirPods page |
+| AirPods do not appear in the Devices list at all | They are not connected, or BlueZ has never read their SDP record so there is no Modalias and the name does not contain "airpod" | Connect them, then `tether bt devices` -- the row carries an `airpods` flag when Tether recognizes them |
 | Calls work but the audio is on the iPhone | Working as designed. BlueZ signals the call and never opens the voice link, so there is nothing to route here | Nothing. `./scripts/bt-probe.sh --calls` during a call shows the evidence; "Getting the call audio onto the desktop instead" is the trade if you want it |
 | The Calls page is empty after configuring PipeWire for call audio | PipeWire's telephony D-Bus service is off, so neither stack exports anything Tether can read | Set `bluez5.telephony-dbus-service = true` and reconnect. With it on, Tether drives PipeWire's gateway directly and the Calls page works, minus carrier and signal |
 | Configured PipeWire for call audio and the machine is not in the iPhone's audio picker | `a2dp_sink` is missing from `bluez5.roles`. iOS only speaks hands-free to a machine it considers an audio destination | Add `a2dp_sink`, and accept that the phone's music comes here too -- see "Getting the call audio onto the desktop instead" |
 | `hfp_connect() unable to start connection` in the bluetoothd log | PipeWire's `hfp_hf` role and BlueZ's built-in profile are both claiming UUID `0000111e` | Remove `hfp_hf` from `bluez5.roles` -- see "Calls" and 2026-09-04 |
+
+Rows for problems fixed in an earlier release are in
+[Fixed in earlier releases](#fixed-in-earlier-releases) under the appendix. If
+`tether version` is older than the release named there, that table applies to you.
 
 ### Keeping the phone's audio on the phone
 
@@ -1056,7 +1055,7 @@ server, a container -- is in the same position from the start.
 ### Reporting a problem
 
 ```bash
-tether --bt-diagnostics
+tether bt diagnostics
 ```
 
 Prints the delivery mode, auth strategy, Bluetooth settings, current connection state, and timeline of recent link and pairing transitions.
@@ -1068,7 +1067,47 @@ addresses, and home and runtime directories become numbered placeholders.
 Messages, contact names, and notification content are dropped, and message and notification events never enter the timeline at all. Read it before
 you post it anyway.
 
-## Recorded results
+## Credits
+
+[BlueFerry](https://github.com/erikwb/blueferry) (Erik Bourget and contributors), `PROTOCOL.md` records the findings this implementation relies on.
+Tether's Bluetooth support is an independent implementation written against those published
+findings, Apple's ANCS specification, the Bluetooth SIG MAP and PBAP specifications, and
+the BlueZ D-Bus API.
+
+## Appendix: history
+
+Everything below is kept for the record and is not needed to set up or run
+Tether today: the troubleshooting rows that only applied to builds older than
+the release that fixed them, then the dated engineering log with the findings
+each entry produced. Start with the sections above or the
+[quickstart](BLUETOOTH-QUICKSTART.md).
+
+### Fixed in earlier releases
+
+These rows were in the main troubleshooting table while the fix was new. Each
+names the entry below that recorded it. On a current build, the "What to do"
+column is "Nothing"; update first.
+
+| Symptom | Cause | What to do |
+|---|---|---|
+| `systemctl enable --now tether-btclass@hci0` hangs in `activating (start)` forever | `btmgmt` epolls its stdin before running the command, and epoll rejects the `/dev/null` systemd hands it, so it waits having done nothing | Update the unit -- it pipes into `btmgmt` now. On an older build, `sudo btmgmt class 4 8` by hand sets the class until `bluetoothd` restarts, see 2026-09-01 below |
+| `tether-btclass@hci0` fails with `Invalid Index`, having worked for months | The controller re-enumerated -- a failed firmware handshake resets it over USB and it comes back as `hci1` -- so the instance name points at an adapter that no longer exists | Update the unit -- it resolves the adapter itself now and the instance name is only a hint, see 2026-09-11 below. By hand, `ls /sys/class/bluetooth` names the live adapter |
+| `tether bt setup` keeps printing the experimental step after the drop-in was applied and `bluetooth` restarted | Before 0.2.35 the check read `/proc`, which a Flatpak sandbox cannot see, and which `main.conf` `Experimental = true` never touches | Update. Confirm the flag itself with `busctl --system introspect org.bluez /org/bluez/hci0 \| grep AdvertisementMonitor` -- a hit means the experimental API is on, see 2026-09-20 below |
+| The phone shows a pairing code, then "Pairing Unsuccessful" a moment later, and the daemon reports the transaction failed about 90s after `confirm` | `tetherd` has no display, so the confirmation dialog could not be shown, and an unshowable dialog used to count as a refusal | Fixed. The comparison now goes to whichever client started the pairing -- the CLI prompts on the terminal, the GTK app opens its own dialog. On an older build, start `tetherd` from a graphical session so it inherits `DISPLAY` or `WAYLAND_DISPLAY` |
+| Pairing fails a few hundred ms after `confirm`, and `tetherd.log` says `tether-dialog: error while loading shared libraries: libgtk-layer-shell.so.0` | `tether-dialog` is linked against `gtk-layer-shell`, which the package did not depend on, so it died in the dynamic loader with exit 127 -- read as the user refusing | Install `gtk-layer-shell`. Fixed in the package dependencies, and a dialog that cannot run now routes the comparison to the client that started the pairing instead of declining it -- see 2026-08-29 below |
+| The log repeats `RegisterAdvertisement failed: ... AlreadyExists` for minutes after one timeout | A registration whose call timed out is still held by BlueZ, and the local flag said otherwise so nothing released it | Fixed. A timed-out registration is now released and an `AlreadyExists` is adopted rather than discarded -- see 2026-09-07 below |
+| Messages stopped after turning notification mirroring off | Fixed. The toggle used to restart supervision, which abandoned the MAP and PBAP sessions at obexd instead of removing them, and the iPhone serves one MAP session at a time | Nothing. Mirroring is switched in place now, and a dropped profile supervisor releases its sessions. On an older build, restart `tetherd` |
+| Notifications stopped and never came back, while messages and contacts kept working | Fixed. The bearer supervisor used to stop retrying LE after six attempts, and only a Classic drop or a daemon restart re-armed it | Nothing. The solicitation is kept on air whenever LE is down, which is what the iPhone answers -- see 2026-08-22 |
+| Walked back into range and nothing reconnected for minutes | Fixed. The ANCS advert was gated on the Classic link, and the Classic backoff had no event that ended the absence | Nothing. The advert stays on air whenever LE is down, and an LE link coming up clears the Classic backoff -- see 2026-08-22 |
+| `tether bt connection` reports LE and messages up but `Notifications: no`, for hours | Fixed. The LE link was opened by the dial and carries no ANCS. A connected link used to take the solicitation off air, so the phone was never asked for the service | Nothing. The advert goes back on air over a link that has stayed up without ANCS -- see 2026-08-23. To clear it by hand on an older build, `tether bt solicit`; do not re-pair, and do not cycle the phone's Bluetooth |
+| LE never comes up on a `BR/EDR + LE` bond, the advert is on air, and cycling the phone's Bluetooth changes nothing | The bond is pinned to `PreferredBearer=bredr`, so the inbound LE link the iPhone opens is never accepted | Fixed. The supervisor hands the preference back to `le` once the Classic link has settled, on every bond including older ones. **Re-pairing was never the fix** -- the Classic fallback re-pinned it on the next drop -- see 2026-09-07 below. `tether bt diagnostics` reports `preferred_bearer`; by hand it is `busctl set-property org.bluez /org/bluez/hci0/dev_<ADDR> org.bluez.Device1 PreferredBearer s le` |
+| `tether bt connection` says `LE: yes` and `Notifications: yes`, but nothing arrives, and only toggling Bluetooth on the iPhone fixes it | The LE bearer dropped while Classic stayed up, and BlueZ left `Notifying` set on the ANCS characteristics, so the daemon read the dead link as live and stopped trying to recover it | Fixed. `le_link_up()` now requires `ServicesResolved` alongside `Notifying` -- see 2026-09-07 below. On an older build, toggling the phone's Bluetooth is the only remedy, which is why it was the only one that ever worked |
+| Notifications go quiet after a reconnect and dismissing one logs `ATT error: 0xa2`, with `ancs_ready: true` | Fixed. ANCS UIDs are per-connection counters, and the reset for them was bound to the device path -- which the bearer grace window deliberately holds across exactly the reconnect that rotates them | Nothing. The reset now runs when the notification subscription comes up -- see 2026-09-08 below. On an older build, restarting the daemon clears it until the next reconnect |
+| The iPhone never offers the "Show Notifications" toggle, and messages and contacts work | Fixed. A BR/EDR-only bond used to latch notification mirroring off in the config, which takes the ANCS solicitation off air -- so the phone is never asked for the service | Nothing. On an older build, `tether bt ancs on` then `tether bt solicit`; `tether bt status` now shows mirroring under `Notifications:` -- see 2026-09-01 |
+| Music resumed on the computer's speakers after a call | Fixed. A reclaim now waits for the buds' sink to come back before resuming | Nothing. `pactl` must be on `PATH` for the wait to work |
+| The AirPods came back after a call but playback did not resume | Fixed. Disconnecting the buds for the call used to clear the remembered players, so there was nothing left to resume | Nothing. Press play on an older build |
+
+### Recorded results
 
 Per the maintenance rule below, every entry records phone model, iOS version, BlueZ
 version, and controller, and distinguishes what was captured from what was inferred.
@@ -1218,7 +1257,7 @@ replayed backlog arrived stamped all alike -- see issue #48.
 ### Group messages
 
 Off by default, `group_messages_enabled` in `$XDG_CONFIG_HOME/tether/bluetooth.json`. It also
-needs `ancs_content_enabled` (on by default, `tether --bt-ancs-content off` to disable),
+needs `ancs_content_enabled` (on by default, `tether bt ancs-content off` to disable),
 so group support cannot work without content mirroring.
 
 MAP delivers a group message with one sender, no participant list and no conversation
@@ -1243,7 +1282,7 @@ an observation, not a guarantee.
 
 Same hardware. `systemctl restart bluetooth` reverted the class from
 `0x7c0408` to `0x7c010c` (Computer / Laptop), exactly as expected. MAP, PBAP, and ANCS
-then reconnected and stayed up, with `tether --bt-status` reporting `class=wrong`
+then reconnected and stayed up, with `tether bt status` reporting `class=wrong`
 throughout.
 
 So the class governs whether iOS offers and grants the Messages and Contacts permissions,
@@ -1324,9 +1363,9 @@ whose LE link had been down for hours, with BR/EDR, MAP and PBAP up throughout.
 
 The advert carries `Timeout = 180`, BlueZ retires it and calls `Release`, and
 nothing re-registered it: the only callers were `pair_device()` and
-`--bt-solicit`. Since iOS reveals the notification permission, and dials the LE
+`tether bt solicit`. Since iOS reveals the notification permission, and dials the LE
 link, only while it is broadcasting, a bond went permanently quiet three minutes
-after pairing unless a human kept running `--bt-solicit`.
+after pairing unless a human kept running `tether bt solicit`.
 
 It is now driven from the connection loop: on air whenever BR/EDR is up, ANCS is
 enabled and LE is down, re-armed each time BlueZ retires it, and unregistered as
@@ -1439,7 +1478,7 @@ MGMT Event: New Long Term Key  Key type: Authenticated key from P-256 (0x03)
 
 `Authenticated key from P-256` is the point: the LE LTK is derived from the
 BR/EDR Secure Connections link key, which is why Secure Connections is a hard
-precondition and why `--bt-status` reports it. The `CT2` bit in the
+precondition and why `tether bt status` reports it. The `CT2` bit in the
 authentication requirements is what asks for the derivation.
 
 **This is the check for a bond that has no LE half.** Capture a pairing with
@@ -1680,7 +1719,7 @@ unlocked (first run — generate). A failed search counts as locked. Waiting tak
 the same one-a-minute retry as everything else here.
 
 Three retention modes, `retention` in `bluetooth.json`, also `tether
---bt-retention`:
+bt retention`:
 
 | Mode | Journal | Contacts | An older tetherd sees |
 |---|---|---|---|
@@ -1721,14 +1760,7 @@ display name until the phone reconnects.
 > **Losing the keyring entry loses the retained history.** There is no escrow and
 > no plaintext copy left behind. The phone can refill part of it over MAP; sent
 > messages, which the iPhone's MAP sent folder never returns, are gone. `tether
-> --bt-retention plaintext` is the supported way to keep a readable copy.
-
-## Credits
-
-[BlueFerry](https://github.com/erikwb/blueferry) (Erik Bourget and contributors), `PROTOCOL.md` records the findings this implementation relies on.
-Tether's Bluetooth support is an independent implementation written against those published
-findings, Apple's ANCS specification, the Bluetooth SIG MAP and PBAP specifications, and
-the BlueZ D-Bus API.
+> bt retention plaintext` is the supported way to keep a readable copy.
 
 ### 2026-08-23 - `Device1.Connect` cannot succeed without a locally connectable profile
 
@@ -1834,7 +1866,7 @@ they need opposite remedies -- which is the recurring lesson in this file.
 
 Reported as the CLI and the GTK app disagreeing about LE. They did not: both read the
 same payload and both said LE was up. The ✗ was on the Notifications row, and
-`--bt-connection` did not print that row at all, so the two could not be compared. That
+`tether bt connection` did not print that row at all, so the two could not be compared. That
 is fixed here as well.
 
 Captured from the daemon's own timeline, on a session that had been in the failed state
@@ -1867,7 +1899,7 @@ retried behind "Waiting for the iPhone's notification service." forever. This is
 daily failure that had been cleared by hand, and the fiddling that cleared it was
 breaking the dead link so the advert could go back up.
 
-**`tether --bt-solicit` alone fixed it, with nothing touched on the phone.** Under a minute:
+**`tether bt solicit` alone fixed it, with nothing touched on the phone.** Under a minute:
 
 | | Before | After |
 |---|---|---|
@@ -1947,7 +1979,7 @@ The backoff ceiling is now conditional: `LE_UP_CLASSIC_BACKOFF_MAX_SECONDS` (30s
 is connected, the full 300s only when it is not. The edge clear stays -- it still collapses
 a ceiling grown during a real absence the moment the phone answers.
 
-The same state produced worse advice. With six failures logged, `--bt-status` said the
+The same state produced worse advice. With six failures logged, `tether bt status` said the
 iPhone "keeps refusing the Bluetooth connection. Turn Bluetooth off and back on" -- about a
 phone that was delivering notifications over LE at that moment, and where following the
 advice would have broken the one bearer that was working. That string is now suppressed
@@ -2135,7 +2167,7 @@ dial. The exact mechanism inside BlueZ was not captured; the behaviour was, twic
 Fixed by handing the preference back after the Classic settle: `pair_device()` writes `"bredr"`,
 waits out `CLASSIC_SETTLE_SECONDS`, then writes `"le"` before soliciting. Verified on a fresh
 pair with no manual step -- `PreferredBearer` read `"le"` straight out of the transaction, LE
-came up at t=12s, ANCS at t=24s, and all six rows of `--bt-connection` read yes. The same code
+came up at t=12s, ANCS at t=24s, and all six rows of `tether bt connection` read yes. The same code
 path before the fix had left LE down for twenty minutes on the same hardware and phone.
 
 Two things this does **not** cover, both untested rather than ruled out:
@@ -2207,7 +2239,7 @@ Three things were wrong, and all three are fixed:
   accept either: bonding without the comparison is exactly what the comparison exists to prevent.
 - The question is routed to the client that started the transaction. The daemon broadcasts
   `bt_pair_confirm_request` with the code and blocks up to 60s for a `bt_pair_confirm` answer.
-  `tether --bt-pair` prompts on the terminal; the GTK app opens a dialog. A daemon that can show
+  `tether bt pair` prompts on the terminal; the GTK app opens a dialog. A daemon that can show
   its own dialog still does, so nothing changes for a `tetherd` started from a desktop session.
 
 If neither a dialog nor a client can be reached, the result now says so and names the fix,
@@ -2241,7 +2273,7 @@ Tether's own `PAIR_TIMEOUT_SECONDS` poll running out after the failure, not a st
 `bluetoothctl` bonded on the same hardware throughout the thread because it uses its own agent and
 never launches `tether-dialog`. The controller was never the problem.
 
-After `pacman -S gtk-layer-shell`, `tether --bt-pair <addr> --explicit-pair` bonded on the first
+After `pacman -S gtk-layer-shell`, `tether bt pair <addr> --explicit-pair` bonded on the first
 attempt, with MAP and PBAP both working and contact names resolved.
 
 Fixed:
@@ -2297,9 +2329,9 @@ never went on air again -- and iOS reveals the "Show Notifications" toggle only 
 peer is soliciting ANCS. The reporter's words were that the toggle never appeared. It could not:
 the phone was never asked.
 
-Nothing surfaced the state either. `--bt-status` had no row for it, `--bt-devices` no flag; only
-the GTK checkbox read it. The recovery a second reporter found by hand -- `tether --bt-ancs on`
-then `tether --bt-solicit` -- is the only one that existed.
+Nothing surfaced the state either. `tether bt status` had no row for it, `tether bt devices` no flag; only
+the GTK checkbox read it. The recovery a second reporter found by hand -- `tether bt ancs on`
+then `tether bt solicit` -- is the only one that existed.
 
 This is the same trap the 2026-08-25 entry records for `auth_strategy`: a failed attempt writing
 its own failure into the config, with nothing in the CLI to undo it. The `ancs_enabled` copy of
@@ -2307,19 +2339,19 @@ it was missed at the time.
 
 Fixed by deleting the latch. A dual bond still turns the preference on; nothing turns it off but
 the user. The runtime already gates ANCS on `ancs_available()` and on `bearer.le_available`, so a
-BR/EDR-only bond costs one advert that the iPhone ignores, not a permanent silence. `--bt-status`
-grew a `Notifications:` row that names `tether --bt-ancs on` when it is off.
+BR/EDR-only bond costs one advert that the iPhone ignores, not a permanent silence. `tether bt status`
+grew a `Notifications:` row that names `tether bt ancs on` when it is off.
 
 **Everything ran on `hci0`, which was a Cambridge Silicon Radio clone dongle.** The reporter had
 that dongle and an Intel 9460/9560; `resolve_capability()` took the first *powered* adapter from a
 path-sorted list, and `pairing.cpp` took `adapters.front()` at six sites with no powered check at
 all -- so the two could also disagree about which controller they were describing. There was no
-setting, no flag, and `--bt-status` printed adapter addresses without saying which one was in use.
+setting, no flag, and `tether bt status` printed adapter addresses without saying which one was in use.
 He found it by accident, unplugged the dongle, and pairing worked on the first attempt.
 
 Fixed with `preferred_adapter(objects, id)`, one picker for both: the configured controller when
 present, else the first powered, else the first. `Config::adapter` holds an `hciN` or an address,
-`tether --bt-adapter <hciN|auto>` sets it, and `--bt-status` marks the controller in use and says
+`tether bt adapter <hciN|auto>` sets it, and `tether bt status` marks the controller in use and says
 when a pinned one is absent. `pairing.cpp` routes all six sites through it.
 
 Not captured: whether the CSR dongle can derive the LE keys at all. It reported `class=ok`,
@@ -2364,7 +2396,7 @@ through `g_io_add_watch`, which accepts `/dev/null` -- so it reproduces on the r
 `probe_secure_connections()` had the quiet version of the same bug: it passed `nullptr` for
 `standard_input` to `g_spawn_async_with_pipes`, so `btmgmt info` inherited whatever fd 0 `tetherd`
 had. Launched from a `.desktop` entry that is `/dev/null`, the child hung, the 1s deadline killed
-it, and `--bt-status` printed `secure-connections=unknown`. The reporter's paste shows exactly that
+it, and `tether bt status` printed `secure-connections=unknown`. The reporter's paste shows exactly that
 line.
 
 Fixed by giving `btmgmt` a pipe everywhere it is spawned: `echo |` in the unit, in the NixOS module
@@ -2678,7 +2710,7 @@ only assumed, and advice that depends on it.
 
 - **`bond_has_le` did not mean the bond had an LE half.** `resolve_capability()` set it
   from `has_le_bearer` alone, which is only "`Bearer.LE1` carries properties" -- so
-  `--bt-status` printed `Bond: BR/EDR + LE` for every bonded device on any machine
+  `tether bt status` printed `Bond: BR/EDR + LE` for every bonded device on any machine
   running `bluetoothd --experimental`. `pairing.cpp` had the right predicate all along
   (`has_le_bearer && le_bonded`); the capability path did not. The one question that
   separates "this chip cannot derive the LE LTK", which is #69's story, from "it derives
@@ -2714,7 +2746,7 @@ while holding a BR/EDR link; it makes the next report able to. What would settle
 order of cost: `btmon` showing whether `LE Set Extended Advertising Enable` ever returns
 a non-zero status and whether any `LE Connection Complete` occurs at all; an external LE
 scanner looking for the `Tether` advert with the iPhone connected and again with its
-Bluetooth off; and `tether --bt-adapter <hciN>` onto any other controller. A secondary
+Bluetooth off; and `tether bt adapter <hciN>` onto any other controller. A secondary
 suspect worth ruling out is `ll-privacy`, since answering the solicitation means the
 iPhone connects with a rotating address the local resolving list has to handle, and clone
 firmware gets resolving lists wrong.
@@ -2751,7 +2783,7 @@ The docs made it worse by never mentioning the split. `docs/BLUETOOTH.md` printe
 packaged-install command as *the* answer and contained no occurrence of "AppImage", "Flatpak" or
 "portable"; the README's AppImage section did not mention the class unit at all. So a portable
 user following the documentation reached a command that cannot work, with nothing pointing at
-`--bt-setup`.
+`tether bt setup`.
 
 Fixed by printing command lines flush left, which removes the failure mode rather than working
 around it, and by adding `tether --install-btclass-unit`: it writes the embedded unit to
@@ -2867,7 +2899,7 @@ impossible.
 
 **Two failures of reporting made this cost far more than it should have.**
 
-`PreferredBearer` appeared nowhere -- not in `--bt-connection`, not in `--bt-diagnostics`, not in
+`PreferredBearer` appeared nowhere -- not in `tether bt connection`, not in `tether bt diagnostics`, not in
 `bt-probe.sh`. Two reporters produced about 25KB of logs, a full diagnostics dump and a clean
 probe between them, and the one property that decided the outcome was in none of it. It is now
 parsed onto `Device`, emitted as `preferred_bearer`, and checked per bonded device by the probe,
@@ -2907,7 +2939,7 @@ seconds is the problem; a longer timeout only stalls the poll loop with it.
 Set up to test the `PreferredBearer` hand-back from the entry above: pin a healthy
 bond to `bredr`, drop the LE bearer, watch the supervisor put it right. It did
 nothing for 90 seconds. The hand-back never logged, no solicitation went on air,
-and `tether --bt-connection` reported `LE: yes` and `Notifications: yes` the
+and `tether bt connection` reported `LE: yes` and `Notifications: yes` the
 whole time -- on a link that was measurably down.
 
 The two views disagreed completely:
@@ -3189,7 +3221,7 @@ with no lock handler configured -- hypridle, swayidle -- will do nothing with it
 Wayland protocol is involved: implementing `ext-session-lock-v1` would mean shipping
 a screen locker, which is not this daemon's job.
 
-### 2026-09-10 - `--bt-setup` printed systemd commands on machines without it
+### 2026-09-10 - `tether bt setup` printed systemd commands on machines without it
 
 Requested as #158 for Artix. Both setup steps assumed systemd: the bearer API step wrote a
 `bluetooth.service.d` drop-in, and the class step enabled `tether-btclass@`. On Artix the Arch
@@ -3210,7 +3242,7 @@ the bearer step is a `sed` plus a restart through the machine's own service mana
 
 Not yet verified on hardware: that `class=ok` survives a `bluetoothd` restart on a machine
 without hostnamed. The `sed` leaves a `main.conf` with no `Class` or `Experimental` line,
-commented or not, unchanged, and `--bt-setup` keeps listing the step. The experimental half of
+commented or not, unchanged, and `tether bt setup` keeps listing the step. The experimental half of
 that last point is fixed in 2026-09-20 below: the flag is read off BlueZ now, whichever way it
 was set.
 
@@ -3437,7 +3469,7 @@ of its own -- and switches A2DP back on for buds this run did not release.
 
 Back from out of range, MAP, PBAP and HFP all reconnected and notifications never returned.
 No `notification session` line, no `0xa2`, no resubscribe: the daemon did not think anything
-was wrong. `--bt-connection` read "LE: yes" and "Notification mirroring is active." The bus:
+was wrong. `tether bt connection` read "LE: yes" and "Notification mirroring is active." The bus:
 
 | Signal | Value |
 |---|---|
@@ -3614,10 +3646,10 @@ Not settled: the exact `ReadValue` error on the GAP characteristic with only BR/
 fix itself on hardware (walk out until only `LE1` times out, come back, expect `LE link dropped`
 then a new session and a popup).
 
-### 2026-09-20 - `--bt-setup` kept printing the experimental step inside Flatpak (#206)
+### 2026-09-20 - `tether bt setup` kept printing the experimental step inside Flatpak (#206)
 
-Reported in #206: the drop-in `--bt-setup` printed was applied, `bluetooth` restarted, and the
-rerun under `flatpak run --command=tether com.tether.desktop --bt-setup` listed the same step.
+Reported in #206: the drop-in `tether bt setup` printed was applied, `bluetooth` restarted, and the
+rerun under `flatpak run --command=tether com.tether.desktop bt setup` listed the same step.
 
 `bluetoothd` has no property for its own flags, so the check walked `/proc` for a process named
 `bluetoothd` and looked for `-E` / `--experimental`. Flatpak gives the app its own PID namespace:

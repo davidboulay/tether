@@ -17,6 +17,10 @@ namespace tether::ui {
     bool daemon_send(const nlohmann::json& message);
     bool daemon_connected();
 
+    // The reconnect loop spawns a daemon at most once per run. After a
+    // deliberate stop (the restart button) one more spawn is wanted.
+    void daemon_client_allow_respawn();
+
     // Called after the event feed goes away, so views can drop any state that
     // was waiting on a reply that is never going to arrive.
     using DaemonDisconnectFn = std::function<void()>;

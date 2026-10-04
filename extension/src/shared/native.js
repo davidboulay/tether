@@ -1,4 +1,5 @@
 import { PSL_DATA } from './psl.js';
+import { deriveHostState } from './hoststate.js';
 
 // Native messaging connection logic
 let port = null;
@@ -43,8 +44,93 @@ function pruneOtpRequests() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Host connection state. The popup and the toolbar badge are driven from here.
+// ---------------------------------------------------------------------------
+let hostState = 'unknown';
+let hostError = '';
+let portHadMessages = false;
+const hostStateListeners = new Set();
+
+// Last code tetherd handed us (from a broadcast or a request_otp reply), kept
+// so the popup can show/copy it and "Fill on this page" can reuse it.
+// { otp, otp_id, sender_domain, ts }
+let lastOtp = null;
+const otpListeners = new Set();
+
+// Reconnect backoff. Each attempt re-launches `tether --native-host`, which
+// itself tries to spawn tetherd once, so a modest cap keeps that cheap.
+let reconnectTimer = null;
+let reconnectDelayMs = 0;
+const RECONNECT_MIN_MS = 3000;
+const RECONNECT_MAX_MS = 60000;
+
+export function getHostState() {
+  return { state: hostState, error: hostError };
+}
+
+export function getLastOtp() {
+  return lastOtp ? { ...lastOtp } : null;
+}
+
+// Tests and the popup's "Clear" button.
+export function clearLastOtp() {
+  lastOtp = null;
+}
+
+export function _resetHostState() {
+  hostState = 'unknown';
+  hostError = '';
+  portHadMessages = false;
+  lastOtp = null;
+  reconnectDelayMs = 0;
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+}
+
+// cb({ state, error }) on every change. Returns an unsubscribe function.
+export function onHostStateChange(cb) {
+  hostStateListeners.add(cb);
+  return () => hostStateListeners.delete(cb);
+}
+
+// cb({ otp, otp_id, sender_domain, ts }) whenever a non-empty code arrives.
+export function onOtpReceived(cb) {
+  otpListeners.add(cb);
+  return () => otpListeners.delete(cb);
+}
+
+function setHostState(state, error = '') {
+  if (state === hostState && error === hostError) return;
+  hostState = state;
+  hostError = error;
+  for (const cb of hostStateListeners) {
+    try { cb({ state, error }); } catch (e) { console.error(e); }
+  }
+}
+
+function scheduleReconnect() {
+  if (reconnectTimer) return;
+  reconnectDelayMs = reconnectDelayMs
+    ? Math.min(reconnectDelayMs * 2, RECONNECT_MAX_MS)
+    : RECONNECT_MIN_MS;
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    if (!port) connectToNativeHost();
+  }, reconnectDelayMs);
+}
+
 export function connectToNativeHost() {
   const hostName = "com.tether.extension";
+  // Always start a fresh port: drop any previous one first so two host
+  // processes never run side by side. Our own disconnect() does not fire our
+  // onDisconnect listener, so the state machine is untouched here.
+  if (port && typeof port.disconnect === 'function') {
+    try { port.disconnect(); } catch (e) { /* already gone */ }
+  }
+  port = null;
   if (typeof browser !== 'undefined' && browser.runtime && browser.runtime.connectNative) {
     port = browser.runtime.connectNative(hostName);
   } else if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.connectNative) {
@@ -54,13 +140,23 @@ export function connectToNativeHost() {
     return null;
   }
 
+  portHadMessages = false;
+  const thisPort = port;
+
   port.onMessage.addListener((message) => {
+    // Any frame from the host means tetherd answered (it replies to the
+    // host's subscribe straight away), so the whole chain is up.
+    if (!portHadMessages) {
+      portHadMessages = true;
+      reconnectDelayMs = 0;
+      setHostState('connected');
+    }
     handleNativeMessage(message);
   });
 
   port.onDisconnect.addListener((p) => {
     let errorMsg = "unknown reason";
-    if (p.error) {
+    if (p && p.error) {
         errorMsg = p.error.message;
     } else if (typeof browser !== 'undefined' && browser.runtime.lastError) {
       errorMsg = browser.runtime.lastError.message;
@@ -68,10 +164,24 @@ export function connectToNativeHost() {
       errorMsg = chrome.runtime.lastError.message;
     }
     console.log("Disconnected from Tether daemon. Reason:", errorMsg);
-    port = null;
+    if (port === thisPort) port = null;
+    setHostState(deriveHostState(errorMsg, { hadMessages: portHadMessages }), errorMsg);
+    portHadMessages = false;
+    scheduleReconnect();
   });
 
   return port;
+}
+
+// Drop the backoff and try again right now (popup "Retry" button).
+export function reconnectNativeHost() {
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+  reconnectDelayMs = 0;
+  if (port) return port;
+  return connectToNativeHost();
 }
 
 export function sendToNativeHost(message) {
@@ -199,10 +309,26 @@ export function deliverOtpToTabs(message) {
   });
 }
 
+function rememberOtp(message) {
+  if (!isValidOtp(message.otp)) return;
+  const id = message.otp_id || 0;
+  if (lastOtp && id && lastOtp.otp_id === id) return; // replayed on reconnect
+  lastOtp = {
+    otp: message.otp,
+    otp_id: id,
+    sender_domain: typeof message.sender_domain === 'string' ? message.sender_domain : '',
+    ts: Date.now(),
+  };
+  for (const cb of otpListeners) {
+    try { cb({ ...lastOtp }); } catch (e) { console.error(e); }
+  }
+}
+
 function handleNativeMessage(message) {
   if (!message || typeof message !== 'object') return;
   // Only react to the commands we understand; ignore anything else.
   if (message.command === "otp_available") {
+    rememberOtp(message);
     deliverOtpToTabs(message);
   }
 }

@@ -2,6 +2,7 @@
 
 #include "ui_util.hpp"
 
+#include <functional>
 #include <string>
 
 namespace tether::ui {
@@ -14,6 +15,17 @@ namespace tether::ui {
 
     // Total unread across threads. Drives the badged icon and a tooltip line.
     void tray_set_unread(int count);
+
+    // Pairing requests waiting for an answer. Non-zero puts the item in the
+    // NeedsAttention status, badges the icon and adds a tooltip line.
+    void tray_set_pending_pairs(int count);
+
+    // Mirrors the daemon's clipboard switch into the menu's check item.
+    void tray_set_clipboard_sync(bool enabled);
+
+    // Called once if no StatusNotifierWatcher turns up within a few seconds of
+    // start, so a window hidden for a tray that does not exist can be shown.
+    void tray_on_no_host(std::function<void()> callback);
 
     // AirPods battery for the tooltip, already formatted. Empty removes the line:
     // nothing connected, or the channel has reported nothing yet.

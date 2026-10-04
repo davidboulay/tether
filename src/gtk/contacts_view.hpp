@@ -15,4 +15,8 @@ namespace tether::ui {
     // Contacts are only pulled while the view is on screen.
     void contacts_view_set_visible(bool visible);
 
+    // Whether the Call button beside phone numbers does anything. Follows the
+    // daemon's call-control switch.
+    void contacts_view_set_calls_enabled(bool enabled);
+
 } // namespace tether::ui

@@ -1,4 +1,6 @@
 #include "daemon_client.hpp"
+#include "banners.hpp"
+#include "toast.hpp"
 #include "tray.hpp"
 #include "ui_util.hpp"
 #include <tether/i18n.hpp>
@@ -27,6 +29,8 @@ namespace tether::ui {
         guint g_event_retry_id = 0;
         DaemonEventFn g_on_event;
         DaemonDisconnectFn g_on_disconnect;
+        bool g_autostart_attempted = false;
+        bool g_was_connected = false;
 
         gboolean start_event_subscription(gpointer);
 
@@ -56,6 +60,11 @@ namespace tether::ui {
             set_status_main(_("Daemon Offline"));
             set_route_status(Route::WiFi, false, _("The Tether daemon is not running."));
             set_route_status(Route::Bluetooth, false, _("The Tether daemon is not running."));
+            if (g_was_connected) {
+                g_was_connected = false;
+                show_toast(_("The Tether daemon went away. Reconnecting…"), ToastLevel::Error);
+            }
+            banners_set_daemon_online(false);
             if (g_on_disconnect)
                 g_on_disconnect();
         }
@@ -133,9 +142,8 @@ namespace tether::ui {
 
             if (::connect(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
                 close(fd);
-                static bool autostart_attempted = false;
-                if (!autostart_attempted) {
-                    autostart_attempted = true;
+                if (!g_autostart_attempted) {
+                    g_autostart_attempted = true;
                     tether::spawn_daemon();
                 }
                 schedule_event_retry();
@@ -155,7 +163,7 @@ namespace tether::ui {
                                               on_event_channel,
                                               nullptr);
             static const char kSubscribe[] = "{\"command\":\"subscribe\"}\n";
-            if (write(fd, kSubscribe, sizeof(kSubscribe) - 1) < 0) {
+            if (send(fd, kSubscribe, sizeof(kSubscribe) - 1, MSG_NOSIGNAL) < 0) {
                 debug::log(ERR, "subscribe write error\n");
             }
             // The daemon answers subscribe with the current Bluetooth connection
@@ -168,6 +176,8 @@ namespace tether::ui {
             // primes the tray unread count
             daemon_send({{"command", "bt_list_threads"}});
             set_status_main(_("Daemon Online"));
+            g_was_connected = true;
+            banners_set_daemon_online(true);
             tray_refresh();
             return G_SOURCE_REMOVE;
         }
@@ -198,7 +208,7 @@ namespace tether::ui {
         size_t written = 0;
         int stalls = 0;
         while (written < payload.size()) {
-            const ssize_t n = ::write(g_event_fd, payload.data() + written, payload.size() - written);
+            const ssize_t n = ::send(g_event_fd, payload.data() + written, payload.size() - written, MSG_NOSIGNAL);
             if (n > 0) {
                 written += static_cast<size_t>(n);
                 stalls = 0;
@@ -211,12 +221,14 @@ namespace tether::ui {
                 // command the user just asked for, but only briefly.
                 if (++stalls > 200) {
                     debug::log(ERR, "daemon send stalled; dropped {} command", message.value("command", "?"));
+                    handle_disconnect();
                     return false;
                 }
                 g_usleep(1000);
                 continue;
             }
             debug::log(ERR, "daemon write error: {}", std::strerror(errno));
+            handle_disconnect();
             return false;
         }
         return true;
@@ -225,5 +237,7 @@ namespace tether::ui {
     void daemon_client_on_disconnect(DaemonDisconnectFn on_disconnect) { g_on_disconnect = std::move(on_disconnect); }
 
     bool daemon_connected() { return g_event_fd >= 0; }
+
+    void daemon_client_allow_respawn() { g_autostart_attempted = false; }
 
 } // namespace tether::ui

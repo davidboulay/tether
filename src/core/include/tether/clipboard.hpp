@@ -17,6 +17,20 @@ namespace tether {
 
     inline constexpr const char* CLIPBOARD_IMAGE_MIME = "image/png";
 
+    // KeePassXC, Bitwarden, Klipper and KDE's own clipboard add this MIME type
+    // to a copy that holds a secret, so clipboard managers leave it alone.
+    inline constexpr const char* PASSWORD_MANAGER_HINT_MIME = "x-kde-passwordManagerHint";
+
+    // Whether a selection was marked sensitive by a password manager. Such a
+    // copy is never read, cached or sent to the phone.
+    inline bool clipboard_is_sensitive(const std::vector<std::string>& offered) {
+        for (const auto& m : offered) {
+            if (m == PASSWORD_MANAGER_HINT_MIME)
+                return true;
+        }
+        return false;
+    }
+
     // MIME type to read from a selection offer. Text wins over an image.
     // Empty when nothing usable is offered.
     inline std::string pick_clipboard_mime(const std::vector<std::string>& offered) {
@@ -148,6 +162,11 @@ namespace tether {
             auto it_offer = offers_.find(offer_proxy);
 
             if (it_mimes == offer_mimes_.end() || it_offer == offers_.end()) {
+                return;
+            }
+
+            if (clipboard_is_sensitive(it_mimes->second)) {
+                debug::log(INFO, "clipboard: a password manager marked this copy sensitive; not synced");
                 return;
             }
 

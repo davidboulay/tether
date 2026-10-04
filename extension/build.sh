@@ -31,10 +31,22 @@ mkdir -p "$BROWSER_DIR/src/background" "$BROWSER_DIR/src/content"
 mkdir -p "$MAIL_DIR/src/mail"
 mkdir -p "$CHROME_DIR/src/background" "$CHROME_DIR/src/content"
 
+# Popup and options pages: bundle the scripts (they import src/shared), copy
+# the markup and styles as they are.
+bundle_ui_pages() {
+    local out_dir="$1"
+    mkdir -p "$out_dir/src/popup" "$out_dir/src/options"
+    "$ESBUILD" extension/src/popup/popup.js --bundle --outfile="$out_dir/src/popup/popup.js"
+    "$ESBUILD" extension/src/options/options.js --bundle --outfile="$out_dir/src/options/options.js"
+    cp extension/src/popup/popup.html extension/src/popup/popup.css "$out_dir/src/popup/"
+    cp extension/src/options/options.html extension/src/options/options.css "$out_dir/src/options/"
+}
+
 # Bundle Firefox Browser Extension
 echo "Bundling Firefox browser extension..."
 "$ESBUILD" extension/src/background/background.js --bundle --outfile="$BROWSER_DIR/src/background/background.js"
 "$ESBUILD" extension/src/content/autofill.js --bundle --outfile="$BROWSER_DIR/src/content/autofill.js"
+bundle_ui_pages "$BROWSER_DIR"
 cp extension/manifest-browser.json "$BROWSER_DIR/manifest.json"
 if [ -d "extension/icons" ]; then cp -R extension/icons "$BROWSER_DIR/"; fi
 make_archive "$BROWSER_DIR" ../tether-browser-extension.zip
@@ -50,7 +62,18 @@ make_archive "$MAIL_DIR" ../tether-mail-extension.xpi
 echo "Bundling Chromium extension..."
 "$ESBUILD" extension/src/background/background.js --bundle --outfile="$CHROME_DIR/src/background/background.js"
 "$ESBUILD" extension/src/content/autofill.js --bundle --outfile="$CHROME_DIR/src/content/autofill.js"
+bundle_ui_pages "$CHROME_DIR"
 cp extension/manifest-browser.json "$CHROME_DIR/manifest.json"
+node --input-type=module - "$CHROME_DIR/manifest.json" <<'JS'
+import { readFileSync, writeFileSync } from 'node:fs';
+const path = process.argv[2];
+const manifest = JSON.parse(readFileSync(path, 'utf8'));
+delete manifest.browser_specific_settings;
+delete manifest.background.scripts;
+manifest.minimum_chrome_version = '105';
+manifest.options_ui.open_in_tab = true;
+writeFileSync(path, JSON.stringify(manifest, null, 2) + '\n');
+JS
 if [ -d "extension/icons" ]; then cp -R extension/icons "$CHROME_DIR/"; fi
 make_archive "$CHROME_DIR" ../tether-chromium-extension.zip
 

@@ -91,6 +91,38 @@ namespace tether::ui {
     border-color: @theme_selected_bg_color;
     background-color: alpha(@theme_selected_bg_color, 0.12);
 }
+
+.tether-toast {
+    background-color: @theme_bg_color;
+    border: 1px solid alpha(@theme_fg_color, 0.25);
+    border-radius: 10px;
+    padding: 8px 10px 8px 14px;
+    box-shadow: 0 3px 12px alpha(black, 0.25);
+}
+
+.tether-toast-success {
+    border-color: alpha(#2ec27e, 0.7);
+}
+
+.tether-toast-error {
+    border-color: alpha(#e01b24, 0.7);
+    background-color: mix(@theme_bg_color, #e01b24, 0.12);
+}
+
+.tether-bubble-pending {
+    opacity: 0.6;
+}
+
+.tether-bubble-failed {
+    background-color: alpha(#e01b24, 0.18);
+    color: @theme_fg_color;
+    border: 1px solid alpha(#e01b24, 0.6);
+}
+
+.tether-sender {
+    font-size: 85%;
+    opacity: 0.8;
+}
 )CSS";
         // xdg-desktop-portal Settings: 0 = no preference, 1 = dark, 2 = light.
         void apply_color_scheme(guint32 scheme) {

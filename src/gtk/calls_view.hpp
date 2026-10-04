@@ -14,4 +14,8 @@ namespace tether::ui {
     // still arrives, because the daemon pushes those unasked.
     void calls_view_set_visible(bool visible);
 
+    // Places a call from elsewhere in the app, e.g. a contact's Call button.
+    // Returns false when the command could not be handed to the daemon.
+    bool calls_view_dial(const std::string& number);
+
 } // namespace tether::ui
