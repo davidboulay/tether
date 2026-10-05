@@ -81,6 +81,7 @@ The extension communicates with `tetherd` via native messaging. This allows user
 
 ### Browser Extension
 - Firefox: [Tether Browser Extension](https://addons.mozilla.org/en-US/firefox/addon/tether-browser-extension/)
+- Google Chrome / Chromium: [Build and install locally](extension/README.md#local-chrome--chromium-installation).
 
 ### Mail Extension
 - Thunderbird: [Tether Mail Extension](https://addons.thunderbird.net/en-US/thunderbird/addon/tether-mail-extension/)
