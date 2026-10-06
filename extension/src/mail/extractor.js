@@ -346,6 +346,10 @@ export function createMailMonitor(api, process, now = Date.now) {
   let work = Promise.resolve();
   const pendingFolders = new Map();
   let folderTimer;
+  let recoveryTimer;
+  let recoveryStopped = true;
+  let recoveryFolders = [];
+  let recoveryIndex = 0;
 
   function enqueue(task) {
     work = work.then(task).catch(error => console.error('Tether mail monitor:', error));
@@ -362,7 +366,7 @@ export function createMailMonitor(api, process, now = Date.now) {
         if (seen.has(message.id)) continue;
         // Opening old mail must not resurrect expired login codes.
         const date = new Date(message.date).getTime();
-        if (!Number.isFinite(date) || date < cutoff) continue;
+        if (!Number.isFinite(date) || date < now() - OTP_TTL_MS) continue;
         seen.set(message.id, now());
         const candidate = displayed || OTP_SUBJECT_PATTERNS.some(p => p.test(message.subject || '')) ||
           /noreply|no-reply|security|verify|auth|account/i.test(message.author || '');
@@ -407,7 +411,52 @@ export function createMailMonitor(api, process, now = Date.now) {
     }, 1000);
   }
 
-  return { received, displayed, folderChanged, idle: () => work };
+  // Date filters do not avoid Thunderbird's header enumeration. Spread recovery
+  // across folders instead of starting an all-account query every 15 seconds.
+  // Do not gate on counts: replacement/moves can leave folder counts unchanged.
+  function startRecovery() {
+    if (!recoveryStopped) return;
+    recoveryStopped = false;
+    const schedule = delay => {
+      if (!recoveryStopped) recoveryTimer = setTimeout(tick, delay);
+    };
+    async function tick() {
+      recoveryTimer = undefined;
+      const started = now();
+      await enqueue(async () => {
+        if (recoveryStopped) return;
+        if (recoveryIndex >= recoveryFolders.length) {
+          // Folder discovery excludes virtual views (duplicate messages) and
+          // empty folders without opening every folder's message database.
+          recoveryFolders = await api.folders.query({
+            isRoot: false, isVirtual: false, isUnified: false,
+            hasMessages: true
+          });
+          recoveryIndex = 0;
+        }
+        const folder = recoveryFolders[recoveryIndex++];
+        if (folder && !recoveryStopped) {
+          await consume(await api.messages.query({
+            folderId: folder.id, includeSubFolders: false,
+            fromDate: new Date(now() - OTP_TTL_MS)
+          }));
+        }
+      });
+      // At least one second idle after each folder, and target a minute per
+      // sweep for small profiles. No interval can queue overlapping sweeps.
+      schedule(Math.max(1000, 60000 / Math.max(1, recoveryFolders.length) - (now() - started)));
+    }
+    schedule(30000);
+  }
+
+  function stop() {
+    recoveryStopped = true;
+    clearTimeout(recoveryTimer);
+    clearTimeout(folderTimer);
+    pendingFolders.clear();
+  }
+
+  return { received, displayed, folderChanged, startRecovery, stop, idle: () => work };
 }
 
 if (typeof messenger !== 'undefined') {
@@ -417,4 +466,5 @@ if (typeof messenger !== 'undefined') {
   messenger.messages.onNewMailReceived.addListener(monitor.received, true);
   messenger.folders?.onFolderInfoChanged?.addListener(monitor.folderChanged);
   messenger.messageDisplay.onMessageDisplayed.addListener(monitor.displayed);
+  monitor.startRecovery();
 }
