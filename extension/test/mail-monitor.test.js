@@ -132,6 +132,20 @@ describe('paced missed-event recovery', () => {
     expect(process.mock.calls.map(([m])=>m.id)).toEqual([1,2]);
     monitor.stop();
   });
+  it('uses a fresh recovery window after a long suspend', async () => {
+    vi.useFakeTimers();
+    const state = recoverySetup();
+    let clock = now;
+    const monitor = createMailMonitor(state.api,state.process,()=>clock);
+    monitor.startRecovery();
+    clock += 24*60*60*1000;
+    const fresh = {...message(2),date:new Date(clock)};
+    state.api.messages.query.mockResolvedValueOnce({messages:[message(1),fresh]});
+    await vi.advanceTimersByTimeAsync(30000);
+    expect(state.api.recentMail.queryRecent).toHaveBeenCalledWith('inbox',clock-600000);
+    expect(state.process).toHaveBeenCalledExactlyOnceWith(fresh);
+    monitor.stop();
+  });
   it('retries after failed discovery and includes newly created folders next sweep', async () => {
     vi.useFakeTimers();
     const { api, monitor } = recoverySetup();
