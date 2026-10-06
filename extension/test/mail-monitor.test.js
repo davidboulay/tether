@@ -8,10 +8,11 @@ function setup(process = vi.fn().mockResolvedValue()) {
     query: vi.fn().mockResolvedValue({ messages: [] }),
     continueList: vi.fn().mockResolvedValue({ messages: [message(2)] })
   } };
+  api.recentMail = { queryRecent: vi.fn((folderId, fromTime) => api.messages.query({folderId, includeSubFolders:false, fromDate:new Date(fromTime)})) };
   return { api, process, monitor: createMailMonitor(api, process, () => now) };
 }
 afterEach(() => vi.useRealTimers());
-describe('mail monitor without mailbox polling', () => {
+describe('mail event processing', () => {
   it('does no startup or recurring queries when idle', async () => {
     vi.useFakeTimers();
     const { api, monitor } = setup();
@@ -106,6 +107,20 @@ describe('paced missed-event recovery', () => {
     monitor.stop();
     await vi.advanceTimersByTimeAsync(180000);
     expect(api.messages.query).toHaveBeenCalledTimes(1);
+  });
+  it('does not revive an old timer when recovery is restarted mid-query', async () => {
+    vi.useFakeTimers();
+    const {api, monitor} = recoverySetup();
+    let release;
+    api.messages.query.mockImplementationOnce(()=>new Promise(r=>{release=r;}));
+    monitor.startRecovery();
+    await vi.advanceTimersByTimeAsync(30000);
+    monitor.stop();monitor.startRecovery();
+    release({messages:[]});await monitor.idle();
+    await vi.advanceTimersByTimeAsync(30000);
+    expect(api.messages.query).toHaveBeenCalledTimes(2);
+    expect(vi.getTimerCount()).toBe(1);
+    monitor.stop();
   });
   it('keeps events deduplicated and rejects expired mail during recovery', async () => {
     vi.useFakeTimers();

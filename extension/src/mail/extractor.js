@@ -348,6 +348,7 @@ export function createMailMonitor(api, process, now = Date.now) {
   let folderTimer;
   let recoveryTimer;
   let recoveryStopped = true;
+  let recoveryGeneration = 0;
   let recoveryFolders = [];
   let recoveryIndex = 0;
 
@@ -402,10 +403,7 @@ export function createMailMonitor(api, process, now = Date.now) {
       pendingFolders.clear();
       enqueue(async () => {
         for (const folderId of ids) {
-          await consume(await api.messages.query({
-            folderId, includeSubFolders: false,
-            fromDate: new Date(now() - OTP_TTL_MS)
-          }));
+          await consume(await api.recentMail.queryRecent(folderId, now() - OTP_TTL_MS));
         }
       });
     }, 1000);
@@ -417,14 +415,15 @@ export function createMailMonitor(api, process, now = Date.now) {
   function startRecovery() {
     if (!recoveryStopped) return;
     recoveryStopped = false;
+    const generation = ++recoveryGeneration;
     const schedule = delay => {
-      if (!recoveryStopped) recoveryTimer = setTimeout(tick, delay);
+      if (!recoveryStopped && generation === recoveryGeneration) recoveryTimer = setTimeout(tick, delay);
     };
     async function tick() {
       recoveryTimer = undefined;
       const started = now();
       await enqueue(async () => {
-        if (recoveryStopped) return;
+        if (recoveryStopped || generation !== recoveryGeneration) return;
         if (recoveryIndex >= recoveryFolders.length) {
           // Folder discovery excludes virtual views (duplicate messages) and
           // empty folders without opening every folder's message database.
@@ -436,10 +435,7 @@ export function createMailMonitor(api, process, now = Date.now) {
         }
         const folder = recoveryFolders[recoveryIndex++];
         if (folder && !recoveryStopped) {
-          await consume(await api.messages.query({
-            folderId: folder.id, includeSubFolders: false,
-            fromDate: new Date(now() - OTP_TTL_MS)
-          }));
+          await consume(await api.recentMail.queryRecent(folder.id, now() - OTP_TTL_MS));
         }
       });
       // At least one second idle after each folder, and target a minute per
@@ -451,6 +447,7 @@ export function createMailMonitor(api, process, now = Date.now) {
 
   function stop() {
     recoveryStopped = true;
+    recoveryGeneration++;
     clearTimeout(recoveryTimer);
     clearTimeout(folderTimer);
     pendingFolders.clear();
